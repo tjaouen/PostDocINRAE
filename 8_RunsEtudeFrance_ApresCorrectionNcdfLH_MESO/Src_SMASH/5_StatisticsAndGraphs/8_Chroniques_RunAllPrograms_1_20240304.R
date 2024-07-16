@@ -1,0 +1,7 @@
+source("/lustre/jaouent/Src/ChangementClimatique_Bottet2019/CodesTristan/8_RunsEtudeFrance_ApresCorrectionNcdfLH_MESO/Src_SMASH/5_StatisticsAndGraphs/8_Chroniques_ProjectionsAssecs_19752005_11_20240307.R")
+source("/lustre/jaouent/Src/ChangementClimatique_Bottet2019/CodesTristan/8_RunsEtudeFrance_ApresCorrectionNcdfLH_MESO/Src_SMASH/5_StatisticsAndGraphs/8_Chroniques_ProjectionsAssecs_20202050_11_20240308.R")
+source("/lustre/jaouent/Src/ChangementClimatique_Bottet2019/CodesTristan/8_RunsEtudeFrance_ApresCorrectionNcdfLH_MESO/Src_SMASH/5_StatisticsAndGraphs/8_Chroniques_ProjectionsAssecs_20412070_11_20240307.R")
+source("/lustre/jaouent/Src/ChangementClimatique_Bottet2019/CodesTristan/8_RunsEtudeFrance_ApresCorrectionNcdfLH_MESO/Src_SMASH/5_StatisticsAndGraphs/8_Chroniques_ProjectionsAssecs_20702098_11_20240307.R")
+
+Sys.sleep(10)
+mpi.finalize()
