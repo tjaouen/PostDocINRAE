@@ -338,7 +338,7 @@ plot_map_variable <- function(tab_, varname_, vartitle_, breaks_, output_name_, 
       HER_eliminees_J2000 <- c("10", "21", "22", "24", "27", "34", "35", "36", "57", "59", "61", "65", "67", "68",
                                "77", "78", "93", "94", "103", "108", "118", "0", "31+33+39", "69+96",
                                "66", "64", "117", "112", "56", "62", "38", "40", "105", "17", "25", "107",
-                               "55", "12", "53")
+                               "55", "12", "53","37+54")
       fr.df$var_cut_[which(fr.df$CdHER2 %in% HER_eliminees_J2000)] = levels(fr.df$var_cut_)[1]
     }
   }
@@ -504,7 +504,7 @@ plot_map_variable <- function(tab_, varname_, vartitle_, breaks_, output_name_, 
 
 
 ### Function ###
-plot_map_variable_sansEtiquettes <- function(tab_, varname_, vartitle_, breaks_, output_name_, title_, reverseColors_, nomPalette_, labels_name_ = FALSE, sansTexteHer_ = FALSE, reverseLegend_ = FALSE, echelleAttenuee_ = FALSE, addValueUnder = NULL, HER2_excluesDensity_ = NULL, subtitle_ = NULL, annotation_txt_ = TRUE, percentFormat = T, borderCol = "#454547", doubleLegend_ = T, taillePalette = NULL, retenuPalette = NULL, reverseFinal = F, reverseFinal_bis = F){
+plot_map_variable_sansEtiquettes <- function(tab_, varname_, vartitle_, breaks_, output_name_, title_, reverseColors_, nomPalette_, labels_name_ = FALSE, sansTexteHer_ = FALSE, reverseLegend_ = FALSE, echelleAttenuee_ = FALSE, addValueUnder = NULL, HER2_excluesDensity_ = NULL, subtitle_ = NULL, annotation_txt_ = TRUE, percentFormat = T, borderCol = "#454547", doubleLegend_ = T, taillePalette = NULL, retenuPalette = NULL, reverseFinal = F, reverseFinal_bis = F, labels_direct_ = NULL){
   
   if (!(is.null(addValueUnder))){
     if (is.Date(tab_[[varname_]])){
@@ -759,9 +759,13 @@ plot_map_variable_sansEtiquettes <- function(tab_, varname_, vartitle_, breaks_,
       HER_eliminees_J2000 <- c("10", "21", "22", "24", "27", "34", "35", "36", "57", "59", "61", "65", "67", "68",
                                "77", "78", "93", "94", "103", "108", "118", "0", "31+33+39", "69+96",
                                "66", "64", "117", "112", "56", "62", "38", "40", "105", "17", "25", "107",
-                               "55", "12", "53")
+                               "55", "12", "53","37+54")
       fr.df$var_cut_[which(fr.df$CdHER2 %in% HER_eliminees_J2000)] = levels(fr.df$var_cut_)[1]
     }
+  }
+  
+  if (!is.null(labels_direct_)){
+    labels_name_annotation_ <- c(NA,labels_direct_)
   }
   
   p <- ggplot() +

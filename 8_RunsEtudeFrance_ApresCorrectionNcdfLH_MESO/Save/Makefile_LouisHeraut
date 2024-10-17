@@ -1,0 +1,25 @@
+all: info
+.PHONY: clean clean_hard run queue tail read info
+
+clean: 
+	rm job.*
+
+clean_hard:
+	rm -rf results
+	rm -rf tmp_* 
+
+run:
+	sbatch main.sh
+
+queue:
+	watch -n 1 squeue -u herautl
+
+tail:
+	tail -s 0.1 -f job*.out
+
+read: 
+	cat job*.out
+	cat job*.err
+
+info:
+	sinfo -o "%10P %6D %11A %5c %20C"

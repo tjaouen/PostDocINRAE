@@ -1,0 +1,513 @@
+library(ncdf4)
+
+rm(list=ls())
+
+### Programmes ###
+source("/home/tjaouen/Documents/Src/PathsProgram/PathProgram_1_20230206.R")
+source("/home/tjaouen/Documents/Src/ChangementClimatique_Bottet2019/CodesTristan/8_RunsEtudeFrance_ApresCorrectionNcdfLH/1_Parameters/0_SimulationParameters_AvecCC_2_20230227_Run2.R")
+
+folder_input_PC_ <- folder_input_PC_param_
+folder_output_ <- folder_output_param_
+folder_src_PC_ <- folder_src_PC_param_
+
+library(lubridate)
+library(hydroTSM)
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+library(strex)
+library(zoo)
+
+### Functions ###
+check_var_exists <- function(nc, var_name) {
+  tryCatch({
+    # Test si la variable existe en récupérant son ID
+    ncvar_get(nc, var_name)
+    return(TRUE)  # La variable existe
+  }, error = function(e) {
+    return(FALSE) # La variable n'existe pas
+  })
+}
+
+readProjNetcdf <- function(filename_){
+  nc_ <- nc_open(filename_)
+  nc_lat_proj_ <- ncvar_get(nc_, "lat")
+  nc_lon_proj_ <- ncvar_get(nc_, "lon")
+  nc_tps_proj_ <- as.Date(nc_$dim$time$vals, origin="1950-01-01")
+  if (check_var_exists(nc_, "prtotAdjust")) {nc_var_proj_ <- ncvar_get(nc_, "prtotAdjust")}
+  if (check_var_exists(nc_, "evspsblpotAdjust")) {nc_var_proj_ <- ncvar_get(nc_, "evspsblpotAdjust")}
+  if (check_var_exists(nc_, "tasAdjust")) {nc_var_proj_ <- ncvar_get(nc_, "tasAdjust")}
+  nc_df_proj_ <- data.frame(nc_lat_proj_ = as.vector(nc_lat_proj_),
+                            nc_lon_proj_ = as.vector(nc_lon_proj_))
+  coord_proj_ <- st_as_sf(nc_df_proj_, coords = c("nc_lon_proj_", "nc_lat_proj_"), crs = 4326)
+  coord_proj_lambertII <- st_transform(coord_proj_, crs = 27572)
+  coord_proj_lambertII_xy <- as.data.frame(st_coordinates(coord_proj_lambertII))
+  X_matrix <- matrix(round(coord_proj_lambertII_xy$X), nrow = nrow(nc_lat_proj_), ncol = ncol(nc_lat_proj_))
+  Y_matrix <- matrix(round(coord_proj_lambertII_xy$Y), nrow = nrow(nc_lon_proj_), ncol = ncol(nc_lon_proj_))
+  return(list(X_matrix,Y_matrix,nc_var_proj_,nc_tps_proj_))
+}
+
+### Metadata ###
+listeStSafran<-read.table(paste0(folder_input_PC_,"/../../ONDE/Data_Description/VentilationSafranClimat/statOnde2018.txt"), sep = " ", header = F,  row.names = NULL, quote="")
+listeStMaille<-read.table(paste0(folder_input_PC_,"/../../ONDE/Data_Description/VentilationSafranClimat/PropSurfaceSafran_3_20241011.txt"), sep=";", header = T, row.names = NULL)
+listeStRecharge<-read.table(paste0(folder_input_PC_,"/../../ONDE/Data_Description/VentilationRecharge/Ventilation_SiteONDE_RechargePotentielle_1_20241001.csv"), sep=";", header = T)
+
+# PRCP #
+PRCP_matrix_ <- readProjNetcdf(filename_ = "/media/tjaouen/Ultra Touch/Backup/Main/Input/Climat/Projections_Explore2/prtotAdjust_France_MPI-M-MPI-ESM-LR_rcp26_r1i1p1_CLMcom-CCLM4-8-17_v1_MF-ADAMONT-SAFRAN-1980-2011_day_20060101-21001231.nc")
+PRCP_matrix_X <- PRCP_matrix_[[1]]
+PRCP_matrix_Y <- PRCP_matrix_[[2]]
+PRCP_matrix_Val <- PRCP_matrix_[[3]]
+PRCP_matrix_Tps <- PRCP_matrix_[[4]]
+# ETP #
+ETP_matrix_ <- readProjNetcdf(filename_ = "/media/tjaouen/Ultra Touch/Backup/Main/Input/Climat/Projections_Explore2/evspsblpotAdjust_France_MPI-M-MPI-ESM-LR_rcp26_r1i1p1_CLMcom-CCLM4-8-17_v1_MF-ADAMONT-SAFRAN-1980-2011_day_20060101-21001231_Hg0175.nc")
+ETP_matrix_X <- ETP_matrix_[[1]]
+ETP_matrix_Y <- ETP_matrix_[[2]]
+ETP_matrix_Val <- ETP_matrix_[[3]]
+ETP_matrix_Tps <- ETP_matrix_[[4]]
+# Temp #
+TEMP_matrix_ <- readProjNetcdf(filename_ = "/media/tjaouen/Ultra Touch/Backup/Main/Input/Climat/Projections_Explore2/tasAdjust_France_MPI-M-MPI-ESM-LR_rcp26_r1i1p1_CLMcom-CCLM4-8-17_v1_MF-ADAMONT-SAFRAN-1980-2011_day_20060101-21001231.nc")
+TEMP_matrix_X <- TEMP_matrix_[[1]]
+TEMP_matrix_Y <- TEMP_matrix_[[2]]
+TEMP_matrix_Val <- TEMP_matrix_[[3]]
+TEMP_matrix_Tps <- TEMP_matrix_[[4]]
+
+
+Bilan_PRCP=read.table("/home/tjaouen/Documents/Input/Climat/SAFRAN/Moy_PRCP_1958_2016_2.txt",sep=";",dec=".",header=T)
+
+hydro <- read.table(paste0(folder_input_PC_,"/StationsSelectionnees/SelectionCsv/SelectionCsv_30_PresentMesures_HERh_FltOndeAtStart_JctHER89et92_ValidAnSecInterHum_2012_2022_20231221/Stations_HYDRO_KGESUp0.00_DispSup-1_2.csv"), header = T, sep = ";", row.names = NULL, quote="")
+colnames(hydro) <- gsub("X.","",colnames(hydro))
+colnames(hydro) <- gsub("\\.","",colnames(hydro))
+onde <- read.table(paste0(folder_input_PC_,"/../../ONDE/Data_Description/CorrespondanceOndeHer/HER2hybrides/Liste_3302StationsONDES_snap_corr_REGIMEhydro_HER1et2hybrides_newRH_3_20230331.csv"), header = T, sep = ",", dec = ".", row.names = NULL, quote="")
+
+recharge <- read.table(paste0(folder_input_PC_,"/../../Recharge/DriasMonth_Txt_20241002/Historical_Safran/RECHPOT_France_SAFRAN_BRGM-RECHARGE_month_195908-202207.txt"), sep=";", dec=".", header = T, quote="")
+colnames(recharge)[2:length(colnames(recharge))] <- format(as.Date(gsub("X","",colnames(recharge)), format = "%Y.%m.%d"),"%Y-%m-%d")[2:length(colnames(recharge))]
+colnames(recharge)[2:length(colnames(recharge))] <- paste0(year(colnames(recharge)[2:length(colnames(recharge))]),"_",month(colnames(recharge)[2:length(colnames(recharge))]))
+recharge_ventilation_ <- read.table(paste0(folder_input_PC_,"/../../ONDE/Data_Description/VentilationRecharge/Ventilation_SiteONDE_RechargePotentielle_1_20241001.csv"), sep=";", dec=".", header = T)
+
+liste <- read.table(paste0(folder_input_PC_,"/../../ONDE/Data_Description/DescriptionSites/Surf_ONDE_4_AjoutMetadonneesManquantes_VentilationSafranClim_20240909.csv"), header = T, sep = ";", row.names = NULL, quote="")
+
+# lecture par annee de suivi
+metaData_complet <- read.table(paste0(folder_input_PC_,"/../../ONDE/Data_Versions/Data_VersionParSites/DonneesOnde_VersionParSites_TJ01_20240617.csv"),sep=";",header=T,fill=T,colClasses="character")
+liste_exclusions <- read.table(paste0(folder_input_PC_,"/../../ONDE/Data_DatesAjustees/ONDE_ListeCampagnesUsuellesExclues.csv"),sep=";",dec=".",header=T)
+dim(metaData_complet) # dim = 174099 10
+dim(metaData_complet[which(metaData_complet$CdHER2 ==  str_before_first(str_after_first(liste_exclusions$HER_AnneeMois,"HER"),"_")
+                           & year(metaData_complet$Date) == str_before_first(str_after_first(liste_exclusions$HER_AnneeMois,"_"),"/")
+                           & month(metaData_complet$Date) == str_after_first(liste_exclusions$HER_AnneeMois,"/")),]) # dim = 43 10
+dim(metaData_complet[which(!(metaData_complet$CdHER2 ==  str_before_first(str_after_first(liste_exclusions$HER_AnneeMois,"HER"),"_")
+                             & year(metaData_complet$Date) == str_before_first(str_after_first(liste_exclusions$HER_AnneeMois,"_"),"/")
+                             & month(metaData_complet$Date) == str_after_first(liste_exclusions$HER_AnneeMois,"/"))),]) # dim = 174056
+metaData_complet <- metaData_complet[which(!(metaData_complet$CdHER2 ==  str_before_first(str_after_first(liste_exclusions$HER_AnneeMois,"HER"),"_")
+                                             & year(metaData_complet$Date) == str_before_first(str_after_first(liste_exclusions$HER_AnneeMois,"_"),"/")
+                                             & month(metaData_complet$Date) == str_after_first(liste_exclusions$HER_AnneeMois,"/"))),]
+
+# HER2 <- read.table("C:/Users/aurelien.beaufort/Documents/SIG/HER/Hydroecoregion2_group.csv",sep=";",header=T,quote="")
+HER2 <- HER_param_
+HER2 <- HER2[which(!(HER2 %in% c(10,18,19,20)))]
+
+# annees <- c(2015:2022)
+# annees <- c(2022)
+annees <- c(2012:2022)
+
+# HERc=85
+# HERc=62
+# HERc = 3
+
+annee = 2012
+HERc = 2
+
+# for(annee in annees){
+  
+  # safran_5 <- read.table(list_safran_[grep(annee,str_after_last(list_safran_,"/"))[1]], sep =";",dec=".",header = T)
+  # colnames(safran_5) <- as.Date(gsub("X","",colnames(safran_5)), format = "%Y.%m.%d")
+  # if (!is.na(grep(annee,str_after_last(list_safran_,"/"))[2])){
+  #   safran_6 <- read.table(list_safran_[grep(annee,str_after_last(list_safran_,"/"))[2]], sep =";",dec=".",header = T)
+  #   colnames(safran_6) <- as.Date(gsub("X","",colnames(safran_6)), format = "%Y.%m.%d")
+  # }
+  # ETP_5 <- read.table(list_ETP_[grep(annee,str_after_last(list_ETP_,"/"))[1]], sep =";",dec=".",header = T)
+  # colnames(ETP_5) <- as.Date(gsub("X","",colnames(ETP_5)), format = "%Y.%m.%d")
+  # if (!is.na(grep(annee,str_after_last(list_ETP_,"/"))[2])){
+  #   ETP_6 <- read.table(list_ETP_[grep(annee,str_after_last(list_ETP_,"/"))[2]], sep =";",dec=".",header = T)
+  #   colnames(ETP_6) <- as.Date(gsub("X","",colnames(ETP_6)), format = "%Y.%m.%d")
+  # }
+  # TEMP_5 <- read.table(list_TEMP_[grep(annee,str_after_last(list_TEMP_,"/"))[1]], sep =";",dec=".",header = T)
+  # colnames(TEMP_5) <- as.Date(gsub("X","",colnames(TEMP_5)), format = "%Y.%m.%d")
+  # if (!is.na(grep(annee,str_after_last(list_TEMP_,"/"))[2])){
+  #   TEMP_6 <- read.table(list_TEMP_[grep(annee,str_after_last(list_TEMP_,"/"))[2]], sep =";",dec=".",header = T)
+  #   colnames(TEMP_6) <- as.Date(gsub("X","",colnames(TEMP_6)), format = "%Y.%m.%d")
+  # }
+  
+for (HERc in HER2){ #[1]
+  
+  id <- 0
+  compt=0
+  output<-data.frame()
+  
+  metaData_complet_HER_ <- metaData_complet[which(metaData_complet$CdHER2 == HERc),]
+  metaData <- metaData_complet[which(metaData_complet$Annee == annee & as.Date(metaData_complet$Date) <= "2022-07-31"),]
+  
+  while(id < length(unique(metaData_complet_HER_$Code))){
+    
+    id=id+1
+    print(id)
+    code_ONDE <- unique(metaData_complet_HER_$Code)[id]
+    ligne_st <- which(as.character(onde$Code) == code_ONDE)
+    
+    # HER <- unique(metaData_complet$CdHER2[which(metaData_complet$Code == code_ONDE)])
+    print("ATTENTION - CHOIX DE LA COLONNE RH DANS TABLE ONDE.")
+    RH <- onde$RH_new_modif[ligne_st]
+    HER <- HERc
+    
+    # on cherche le nombre d'obervation ONDE dispo sur une ann?e
+    row_st=which(metaData$Code==code_ONDE, arr.ind = TRUE)
+    n_obs=1
+    
+    while(n_obs <= length(row_st)){
+      
+      compt=compt+1
+      output[compt,1]<-code_ONDE
+      # output[compt,2] <- liste$altitude[id] #altitude
+      output[compt,2] <- liste$altitude[which(liste$F_CdSiteHy == code_ONDE)] #altitude
+      date_onde<-as.character(metaData$Date[row_st[n_obs]])
+      output[compt,3] <- date_onde
+      
+      # if(date_onde != ""){
+      
+      # Chargement des donn?es Safran
+      # safran_data<-safran_5
+      # etp_data<-ETP_5
+      # Temp_data<-TEMP_5
+      # safran_data2<-safran_6
+      # etp_data2<-ETP_6
+      # Temp_data2<-TEMP_6
+      
+      # repere=which(as.Date(colnames(safran_data)) == as.Date(date_onde))
+      # if (length(repere)==0){repere=-10}
+      # repere2=which(as.Date(colnames(safran_data2)) == as.Date(date_onde))
+      # if (length(repere2)==0){repere2=-10}
+      # }
+      
+      output[compt,4]<-metaData$Observation[row_st[n_obs]] # ajout de la modalit? d'?coulement ONDE
+      output[compt,5]<- NA #debExtract[flow_cible[1],2] # ajout du d?bit mesur? correspondant
+      output[compt,6]<-NA #debExtract[flow_cible[1],2] # ajout du d?bit sp?cifique jour J
+      output[compt,7]<-NA #debExtract[(flow_cible[1]-1),2] # ajout du d?bit sp?cifique jour J-1
+      output[compt,8]<-NA #debExtract[(flow_cible[1]-2),2] # ajout du d?bit sp?cifique jour J-2
+      output[compt,9]<-NA #debExtract[(flow_cible[1]-3),2] # ajout du d?bit sp?cifique jour J-3
+      output[compt,10]<-NA #debExtract[(flow_cible[1]-4),2] # ajout du d?bit sp?cifique jour J-4
+      output[compt,11]<-NA #debExtract[(flow_cible[1]-5),2] # ajout du d?bit sp?cifique jour J-5
+      output[compt,12]<-NA #debExtract[(flow_cible[1]),3] # ajout de la Fr?quence de non d?passement du d?bit jour J
+      output[compt,13]<-NA #debExtract[(flow_cible[1]-1),3] # ajout de la Fr?quence de non d?passement du d?bit jour J
+      output[compt,14]<-NA #debExtract[(flow_cible[1]-2),3] # ajout de la Fr?quence de non d?passement du d?bit jour J
+      output[compt,15]<-NA #debExtract[(flow_cible[1]-3),3] # ajout de la Fr?quence de non d?passement du d?bit jour J
+      output[compt,16]<-NA #debExtract[(flow_cible[1]-4),3] # ajout de la Fr?quence de non d?passement du d?bit jour J
+      output[compt,17]<-NA #[(flow_cible[1]-5),3] # ajout de la Fr?quence de non d?passement du d?bit jour J
+      
+      # On cherche la position de la station dans la liste des stations index?es avec une maille SAFRAN
+      ligneSt<-which(as.character(listeStSafran[,1])==code_ONDE)
+      
+      if(date_onde != "" & length(ligneSt) > 0){
+        
+        x_st=listeStSafran[ligneSt,2]
+        y_st=listeStSafran[ligneSt,3]
+        
+        # On cherche les mailles pr?sentent dans le BV de la station et leur contribution
+        indexMaille<-listeStMaille$NumMaille_proj_[which(as.character(listeStMaille$Name_onde) == code_ONDE)]
+        
+        PRCP_pos_ <- which(listeStMaille$XLambert2_Maille[which(as.character(listeStMaille$Name_onde) == code_ONDE)][1] == PRCP_matrix_X &
+                             listeStMaille$YLambert2_Maille[which(as.character(listeStMaille$Name_onde) == code_ONDE)][1] == PRCP_matrix_Y,
+                           arr.ind = T)
+        ETP_pos_ <- which(listeStMaille$XLambert2_Maille[which(as.character(listeStMaille$Name_onde) == code_ONDE)][1] == ETP_matrix_X &
+                             listeStMaille$YLambert2_Maille[which(as.character(listeStMaille$Name_onde) == code_ONDE)][1] == ETP_matrix_Y,
+                           arr.ind = T)
+        TEMP_pos_ <- which(listeStMaille$XLambert2_Maille[which(as.character(listeStMaille$Name_onde) == code_ONDE)][1] == TEMP_matrix_X &
+                             listeStMaille$YLambert2_Maille[which(as.character(listeStMaille$Name_onde) == code_ONDE)][1] == TEMP_matrix_Y,
+                           arr.ind = T)
+        PRCP_tps_ <- which(PRCP_matrix_Tps==date_onde)
+        
+        for (a in 18:110){
+          output[compt,a] <- NA
+        }
+        
+        for (index in 1:length(indexMaille)){
+          
+          ratio <- as.numeric(as.character(listeStMaille$SurfCont[indexMaille[index]])) / as.numeric(as.character(listeStMaille$SurfaceT_onde[indexMaille[index]])) # Surface contributive de la maille pour une station
+          # VOIR COMMENT EST CALCULE
+          
+          jour=0
+          while (jour <= 30){
+            date_ <- as.Date(date_onde)-jour
+            if (sum(grepl(date_,colnames(safran_5)))>0){
+              output[compt,(18+jour)] <- as.numeric(safran_5[[as.character(date_)]][as.numeric(listeStMaille$NumMaill[indexMaille[index]])])*ratio + ifelse(is.na(output[compt,(18+jour)]),0,output[compt,(18+jour)])
+            }else if (sum(grepl(date_,colnames(safran_6)))>0){
+              output[compt,(18+jour)] <- as.numeric(safran_6[[as.character(date_)]][as.numeric(listeStMaille$NumMaill[indexMaille[index]])])*ratio + ifelse(is.na(output[compt,(18+jour)]),0,output[compt,(18+jour)])
+            }
+            # if((repere-jour)>0){
+            #   output[compt,(18+jour)] <- as.numeric(as.character(safran_data[as.numeric(listeStMaille$NumMaill[indexMaille[index]]),(repere-jour)]))*ratio + ifelse(is.na(output[compt,(18+jour)]),0,output[compt,(18+jour)])
+            # } else if((repere-jour)<=0 & (repere2-jour)>0){
+            #   output[compt,(18+jour)] <- as.numeric(as.character(safran_data2[as.numeric(listeStMaille$NumMaill[indexMaille[index]]),(repere2-jour)]))*ratio + ifelse(is.na(output[compt,(18+jour)]),0,output[compt,(18+jour)])
+            # }
+            jour=jour+1
+          }
+          
+          jour=0
+          while (jour <= 30){
+            date_ <- as.Date(date_onde)-jour
+            if (sum(grepl(date_,colnames(ETP_5)))>0){
+              output[compt,(49+jour)] <- as.numeric(ETP_5[[as.character(date_)]][as.numeric(listeStMaille$NumMaill[indexMaille[index]])])*ratio + ifelse(is.na(output[compt,(49+jour)]),0,output[compt,(49+jour)])
+            }else if (sum(grepl(date_,colnames(ETP_6)))>0){
+              output[compt,(49+jour)] <- as.numeric(ETP_6[[as.character(date_)]][as.numeric(listeStMaille$NumMaill[indexMaille[index]])])*ratio + ifelse(is.na(output[compt,(49+jour)]),0,output[compt,(49+jour)])
+            }
+            # if((repere-jour)>0){
+            #   output[compt,(49+jour)] <- as.numeric(as.character(etp_data[as.numeric(listeStMaille$NumMaill[indexMaille[index]]),(repere-jour)]))*ratio + ifelse(is.na(output[compt,(49+jour)]),0,output[compt,(49+jour)])
+            # } else if((repere-jour)<=0 & (repere2-jour)>0){
+            #   output[compt,(49+jour)] <- as.numeric(as.character(etp_data2[as.numeric(listeStMaille$NumMaill[indexMaille[index]]),(repere2-jour)]))*ratio + ifelse(is.na(output[compt,(49+jour)]),0,output[compt,(49+jour)])
+            # }
+            jour=jour+1
+          }
+          
+          jour=0
+          while (jour <= 30){
+            date_ <- as.Date(date_onde)-jour
+            if (sum(grepl(date_,colnames(TEMP_5)))>0){
+              output[compt,(80+jour)] <- as.numeric(TEMP_5[[as.character(date_)]][as.numeric(listeStMaille$NumMaill[indexMaille[index]])])*ratio + ifelse(is.na(output[compt,(80+jour)]),0,output[compt,(80+jour)])
+            }else if (sum(grepl(date_,colnames(TEMP_6)))>0){
+              output[compt,(80+jour)] <- as.numeric(TEMP_6[[as.character(date_)]][as.numeric(listeStMaille$NumMaill[indexMaille[index]])])*ratio + ifelse(is.na(output[compt,(80+jour)]),0,output[compt,(80+jour)])
+            }
+            # if((repere-jour)>0){
+            #   output[compt,(80+jour)] <- as.numeric(as.character(Temp_data[as.numeric(listeStMaille$NumMaill[indexMaille[index]]),(repere-jour)]))*ratio + ifelse(is.na(output[compt,(80+jour)]),0,output[compt,(80+jour)])
+            # } else if((repere-jour)<=0 & (repere2-jour)>0){
+            #   output[compt,(80+jour)] <- as.numeric(as.character(Temp_data2[as.numeric(listeStMaille$NumMaill[indexMaille[index]]),(repere2-jour)]))*ratio + ifelse(is.na(output[compt,(80+jour)]),0,output[compt,(80+jour)])
+            # }
+            jour=jour+1
+          }
+          # }
+        }
+      } else {
+        for (a in 18:110){
+          output[compt,a]<-NA
+        }
+      }
+      
+      #------------------------------
+      # calcul de l'indice d'aridit?
+      #------------------------------
+      
+      if (format(as.Date(date_onde), "%Y")==annee){
+        m=as.numeric(listeStMaille$NumMaill[indexMaille[index]])
+        P <- sum(as.numeric(safran_5[m,which(month(colnames(safran_5)) >= 1 & month(colnames(safran_5)) <= 7 & year(colnames(safran_5)) == annee)]))
+        E <- sum(as.numeric(ETP_5[m,which(month(colnames(ETP_5)) >= 1 & month(colnames(ETP_5)) <= 7 & year(colnames(ETP_5)) == annee)]))
+        AI<-P/E
+      }
+      output[compt,5] <- AI
+      
+      #----------------------------------------------------
+      # Calcul anomalies recharche nappe HIVER
+      #----------------------------------------------------
+      m<-as.numeric(listeStMaille$NumMaill[indexMaille[index]])
+      date_columns<-as.Date(colnames(safran_5))
+      REC<-sum(as.numeric(safran_5[m, date_columns >= as.Date("2011-12-01") & date_columns <= as.Date("2012-03-31")])) # Recharge en pluie de l'hiver precedent (01/12/2011 au 31/03/2012 pour date du 29/05/2012)
+      output[compt,6]<-REC/Bilan_PRCP$Hiver_Dec_Mars[m]
+      
+      #----------------------------------------------------
+      # Calcul des fr?quences au non d?passement Q
+      #----------------------------------------------------
+      
+      if (file.exists(paste(folder_src_PC_,"/ChangementClimatique_Bottet2019/CodesTristan/9_PredictionParSiteONDE/Neural_Network/Data/Freq_",annee,"_",HER,"_",indexMaille[index],"_HYDRO_ONLY.txt",sep=""))){
+        output_HYDRO<-read.table(paste(folder_src_PC_,"/ChangementClimatique_Bottet2019/CodesTristan/9_PredictionParSiteONDE/Neural_Network/Data/Freq_",annee,"_",HER,"_",indexMaille[index],"_HYDRO_ONLY.txt",sep=""),sep=";",header=T)
+        
+        date_select<-which(as.Date(output_HYDRO$Date)==as.Date(date_onde))
+        
+        if (length(date_select)>0){
+          output$V111[compt]=output_HYDRO$J0[date_select] # Moyenne des d?bits sp?cifiques au jour j de toutes les stations HYDRO d'une r?gime hydro donn?e
+          output$V112[compt]=output_HYDRO$J1[date_select] # Moyenne des d?bits sp?cifiques au jour j-1 de toutes les stations HYDRO d'une r?gime hydro donn?e
+          output$V113[compt]=output_HYDRO$J2[date_select] # Moyenne des d?bits sp?cifiques au jour j-2 de toutes les stations HYDRO d'une r?gime hydro donn?e
+          output$V114[compt]=output_HYDRO$J3[date_select] # Moyenne des d?bits sp?cifiques au jour j-3 de toutes les stations HYDRO d'une r?gime hydro donn?e
+          output$V115[compt]=output_HYDRO$J4[date_select] # Moyenne des d?bits sp?cifiques au jour j-4 de toutes les stations HYDRO d'une r?gime hydro donn?e
+          output$V116[compt]=output_HYDRO$J5[date_select] # Moyenne des d?bits sp?cifiques au jour j de toutes les stations HYDRO d'une r?gime hydro donn?e
+          output$V117[compt]=output_HYDRO$J6[date_select] # Moyenne des d?bits sp?cifiques au jour j-1 de toutes les stations HYDRO d'une r?gime hydro donn?e
+          output$V118[compt]=output_HYDRO$J7[date_select] # Moyenne des d?bits sp?cifiques au jour j-2 de toutes les stations HYDRO d'une r?gime hydro donn?e
+          output$V119[compt]=output_HYDRO$J8[date_select] # Moyenne des d?bits sp?cifiques au jour j-3 de toutes les stations HYDRO d'une r?gime hydro donn?e
+          output$V120[compt]=output_HYDRO$J9[date_select] # Moyenne des d?bits sp?cifiques au jour j-4 de toutes les stations HYDRO d'une r?gime hydro donn?e
+          output$V121[compt]=output_HYDRO$J10[date_select] # Moyenne des d?bits sp?cifiques au jour j de toutes les stations HYDRO d'une r?gime hydro donn?e
+        } else {
+          output$V111[compt]=NA
+          output$V112[compt]=NA
+          output$V113[compt]=NA
+          output$V114[compt]=NA
+          output$V115[compt]=NA
+          output$V116[compt]=NA
+          output$V117[compt]=NA
+          output$V118[compt]=NA
+          output$V119[compt]=NA
+          output$V120[compt]=NA
+          output$V121[compt]=NA
+        }
+        output$V122[compt]=mean(as.numeric(output[compt,111:121]))
+      } else {
+        output$V111[compt]=NA
+        output$V112[compt]=NA
+        output$V113[compt]=NA
+        output$V114[compt]=NA
+        output$V115[compt]=NA
+        output$V116[compt]=NA
+        output$V117[compt]=NA
+        output$V118[compt]=NA
+        output$V119[compt]=NA
+        output$V120[compt]=NA
+        output$V121[compt]=NA
+        output$V122[compt]=NA
+      }
+      
+      #----------------------------------------------------
+      # Calcul des fr?quences au non d?passement GW
+      #----------------------------------------------------
+      
+      if (file.exists(paste(folder_output_,"/23_PredictionParSiteONDE_PremierTest/Input/Data/Freq_PiezoOnly/Freq_",annee,"_",HER,"_",indexMaille[index],"_PIEZO_ONLY.txt",sep=""))){
+        
+        output_HYDRO<-read.table(paste(folder_output_,"/23_PredictionParSiteONDE_PremierTest/Input/Data/Freq_PiezoOnly/Freq_",annee,"_",HER,"_",indexMaille[index],"_PIEZO_ONLY.txt",sep=""),sep=";",header=T)
+        date_select<-which(as.Date(output_HYDRO$Date)==as.Date(date_onde))
+        
+        if (length(date_select)>0){
+          output$V123[compt]=output_HYDRO$J0[date_select] # Moyenne des d?bits sp?cifiques au jour j de toutes les stations HYDRO d'une r?gime hydro donn?e
+          output$V124[compt]=output_HYDRO$J1[date_select] # Moyenne des d?bits sp?cifiques au jour j-1 de toutes les stations HYDRO d'une r?gime hydro donn?e
+          output$V125[compt]=output_HYDRO$J2[date_select] # Moyenne des d?bits sp?cifiques au jour j-2 de toutes les stations HYDRO d'une r?gime hydro donn?e
+          output$V126[compt]=output_HYDRO$J3[date_select] # Moyenne des d?bits sp?cifiques au jour j-3 de toutes les stations HYDRO d'une r?gime hydro donn?e
+          output$V127[compt]=output_HYDRO$J4[date_select] # Moyenne des d?bits sp?cifiques au jour j-4 de toutes les stations HYDRO d'une r?gime hydro donn?e
+          output$V128[compt]=output_HYDRO$J5[date_select] # Moyenne des d?bits sp?cifiques au jour j de toutes les stations HYDRO d'une r?gime hydro donn?e
+          output$V129[compt]=output_HYDRO$J6[date_select] # Moyenne des d?bits sp?cifiques au jour j-1 de toutes les stations HYDRO d'une r?gime hydro donn?e
+          output$V130[compt]=output_HYDRO$J7[date_select] # Moyenne des d?bits sp?cifiques au jour j-2 de toutes les stations HYDRO d'une r?gime hydro donn?e
+          output$V131[compt]=output_HYDRO$J8[date_select] # Moyenne des d?bits sp?cifiques au jour j-3 de toutes les stations HYDRO d'une r?gime hydro donn?e
+          output$V132[compt]=output_HYDRO$J9[date_select] # Moyenne des d?bits sp?cifiques au jour j-4 de toutes les stations HYDRO d'une r?gime hydro donn?e
+          output$V133[compt]=output_HYDRO$J10[date_select] # Moyenne des d?bits sp?cifiques au jour j de toutes les stations HYDRO d'une r?gime hydro donn?e
+        } else {
+          output$V123[compt]=NA
+          output$V124[compt]=NA
+          output$V125[compt]=NA
+          output$V126[compt]=NA
+          output$V127[compt]=NA
+          output$V128[compt]=NA
+          output$V129[compt]=NA
+          output$V130[compt]=NA
+          output$V131[compt]=NA
+          output$V132[compt]=NA
+          output$V133[compt]=NA
+        }
+        output[compt,134]=mean(as.numeric(output[compt,123:133]))
+      } else {
+        output$V123[compt]=NA
+        output$V124[compt]=NA
+        output$V125[compt]=NA
+        output$V126[compt]=NA
+        output$V127[compt]=NA
+        output$V128[compt]=NA
+        output$V129[compt]=NA
+        output$V130[compt]=NA
+        output$V131[compt]=NA
+        output$V132[compt]=NA
+        output$V133[compt]=NA
+        output$V134[compt]=NA
+      }
+      year_month_onde_ <- paste0(year(date_onde),"_",month(date_onde))
+      output$V135[compt] <- recharge_ventilation_$CdEuMasseD[which(recharge_ventilation_$Code == code_ONDE)]
+      output$V136[compt] <- recharge[[year_month_onde_]][which(recharge$Code == recharge_ventilation_$CdEuMasseD[which(recharge_ventilation_$Code == code_ONDE)])] #,
+      # which(paste0(year(as.Date(colnames(recharge)[!grepl("Code",colnames(recharge))])),
+      #              "_",
+      #              month(as.Date(colnames(recharge)[!grepl("Code",colnames(recharge))]))) == year_month_onde_)+1]
+      
+      n_obs=n_obs+1
+      output$V137[compt]=HER # Num?ro HER 2 d'apr?s Wasson et al., 2002
+      output$V138[compt]=RH # Num?ro R?gime Hydro d'apr?s Sauquet et al., 2008
+    }
+  }
+  
+  if (ncol(output)>0){
+    colnames(output)<-c("Code_Onde","Altitude","Date","Mod_ecoulement","AI_JanvJuil","REC_HIV","Q_J-1","Q_J-2","Q_J-3","Q_J-4","Q_J-5","Q_J-6","Q_J-7","Q_J-8","Q_J-9","Q_J-10","Q_J-11",
+                        "PRCP_J","PRCP_J-1","PRCP_J-2","PRCP_J-3","PRCP_J-4","PRCP_J-5","PRCP_J-6","PRCP_J-7","PRCP_J-8","PRCP_J-9","PRCP_J-10",
+                        "PRCP_J-11","PRCP_J-12","PRCP_J-13","PRCP_J-14","PRCP_J-15","PRCP_J-16","PRCP_J-17","PRCP_J-18","PRCP_J-19","PRCP_J-20",
+                        "PRCP_J-21","PRCP_J-22","PRCP_J-23","PRCP_J-24","PRCP_J-25","PRCP_J-26","PRCP_J-27","PRCP_J-28","PRCP_J-29","PRCP_J-30",
+                        "ETP_J","ETP_J-1","ETP_J-2","ETP_J-3","ETP_J-4","ETP_J-5","ETP_J-6","ETP_J-7","ETP_J-8","ETP_J-9","ETP_J-10",
+                        "ETP_J-11","ETP_J-12","ETP_J-13","ETP_J-14","ETP_J-15","ETP_J-16","ETP_J-17","ETP_J-18","ETP_J-19","ETP_J-20",
+                        "ETP_J-21","ETP_J-22","ETP_J-23","ETP_J-24","ETP_J-25","ETP_J-26","ETP_J-27","ETP_J-28","ETP_J-29","ETP_J-30",
+                        "TA_J","TA_J-1","TA_J-2","TA_J-3","TA_J-4","TA_J-5","TA_J-6","TA_J-7","TA_J-8","TA_J-9","TA_J-10",
+                        "TA_J-11","TA_J-12","TA_J-13","TA_J-14","TA_J-15","TA_J-16","TA_J-17","TA_J-18","TA_J-19","TA_J-20","TA_J-21",
+                        "TA_J-22","TA_J-23","TA_J-24","TA_J-25","TA_J-26","TA_J-27","TA_J-28","TA_J-29","TA_J-30",
+                        "FreqQ_J","FreqQ_J-1","FreqQ_J-2","FreqQ_J-3","FreqQ_J-4","FreqQ_J-5","FreqQ_J-6","FreqQ_J-7","FreqQ_J-8","FreqQ_J-9","FreqQ_J-10",'Moy_FreqQ',
+                        "FreqGW_J","FreqGW_J-1","FreqGW_J-2","FreqGW_J-3","FreqGW_J-4","FreqGW_J-5","FreqGW_J-6","FreqGW_J-7","FreqGW_J-8","FreqGW_J-9","FreqGW_J-10","Moy_FreqGW",
+                        "CodeMasseEau","GW_Mm",
+                        "HER","RH")
+    output=output[,-c(7:17)]
+  }
+  
+  write.table(output,paste(folder_output_,"/23_PredictionParSiteONDE_PremierTest/Input/Data/InputTestClassif/1_InputDetail_ParAnneeEtMerge/Input_test_classif_HER_",HERc,"_annee",annee,"_30_jours_fin_caract_new_meteo_FINAL.txt",sep=""),sep=";", row.name=F,quote=F)
+  # }
+}
+}
+
+
+
+for (HERc in HER2){ # [1]
+
+list_files_ <- list.files(paste0(folder_output_,"/23_PredictionParSiteONDE_PremierTest/Input/Data/InputTestClassif/1_InputDetail_ParAnneeEtMerge/"), pattern=paste0("Input_test_classif_HER_",HERc,"_annee"), full.names = T)
+output <- data.frame()
+for (f_ in list_files_){
+  output <- rbind(output,read.table(f_, sep = ";", dec = ".", header = T))
+}
+
+if (ncol(output)>0){
+  
+  list=unique(output$Code_Onde)
+  
+  for (i in 1:length(list)){
+    select=which(as.character(output$Code_Onde)==as.character(list[i]))
+    
+    for (id in 1:length(select)){
+      # Calcul du Zeroqual par Mois
+      no_flow=which((as.character(output$Mod_ecoulement[select])=="Ecoulement non visible" | as.character(output$Mod_ecoulement[select])=="Assec") &
+                      (format(as.Date(output$Date[select],"%Y-%m-%d"),"%m")==format(as.Date(output$Date[select[id]],"%Y-%m-%d"),"%m")))
+      flow=which((as.character(output$Mod_ecoulement[select])=="Ecoulement visible" | as.character(output$Mod_ecoulement[select])=="Ecoulement visible acceptable" | as.character(output$Mod_ecoulement[select])=="Ecoulement visible faible") &
+                   (format(as.Date(output$Date[select],"%Y-%m-%d"),"%m")==format(as.Date(output$Date[select[id]],"%Y-%m-%d"),"%m")))
+      
+      if (length(no_flow) == 0 & length(flow) == 0){
+        print(HERc)
+        print(annee)
+        print(output$Code_Onde[select[id]])
+        print(output$Date[select[id]])
+        print(id)
+        
+        if (output$Mod_ecoulement[select[which((format(as.Date(output$Date[select],"%Y-%m-%d"),"%m")==format(as.Date(output$Date[select[id]],"%Y-%m-%d"),"%m")))]] != "Observation impossible"){
+          print(aaaa)
+        }
+        
+      }
+      
+      output[select[id],126]=(length(no_flow)/(length(flow)+length(no_flow)))*100
+      
+      if (as.character(output$Mod_ecoulement[select[id]])=="Ecoulement non visible" | as.character(output$Mod_ecoulement[select[id]])=="Assec"){
+        output[select[id],127]=1
+      } else{
+        output[select[id],127]=0
+      }
+    }
+  }
+  
+  colnames(output)[126:127] <- c("PourcentZeroCalage","Bin_Assec")
+  
+  #----------------------------------------
+  # Ajout de caract?ristiques par stations
+  #----------------------------------------
+  for (a in 1:nrow(output)){
+    output[a,128] <- liste$Surf_BV[which(liste$F_CdSiteHy == output$Code_Onde[a])]
+    output[a,129] <- NA # PK amont
+    output[a,130] <- liste$Pente[which(liste$F_CdSiteHy == output$Code_Onde[a])]
+  }
+  
+  colnames(output)[128:130]<-c("Aire_BV","PK_amont","Pente")
+  
+  # output <- output %>%
+  #   arrange(Code_Onde, month(Date))
+  output <- output %>%
+    arrange(Code_Onde, Date)
+}
+  # write.table(output,paste("/home/tjaouen/Documents/Output/ChangementClimatique2019/EtudeFrance/23_PredictionParSiteONDE_PremierTest/Input/Data/InputTestClassif/Input_test_classif_HER_",HERc,"_30_jours_fin_caract_new_meteo_FINAL.txt",sep=""),sep=";", row.name=F,quote=F)
+  # write.table(output,paste(folder_output_,"/23_PredictionParSiteONDE_PremierTest/Input/Data/InputTestClassif/1_InputDetail_ParAnneeEtMerge/Input_test_classif_HER_",HERc,"_30_jours_fin_caract_new_meteo_FINAL.csv",sep=""),sep=";", row.name=F,quote=F)
+# }
+

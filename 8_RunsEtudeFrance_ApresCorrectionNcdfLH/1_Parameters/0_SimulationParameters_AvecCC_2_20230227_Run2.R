@@ -53,6 +53,8 @@ folder_onde_param_ = paste0(folder_ONDE_DataDatesAjustees_,"ONDE_cmpUsuelles_201
 # nomSim_param_ = "26_ObservesReanalyseSafran_CorrNcdfLH_InterBVPS_NouvelAlgoJctHydroExp2_20231201"
 # nomSim_param_ = "29_ObservesReanalyseSafran_CorrNcdfLH_InterBVPS_NouvelAlgoJctHydroExp2_JctHER89et92_20231221"
 nomSim_param_ = "32_ObservesReanalyseSafran_ApprentissageTousScenariosProjections_20240208"
+# nomSim_param_ = "33_ObservesReanalyseSafran_Exclusion37054_20240826"
+# nomSim_param_ = "33_PresentMesures_2012_2022_Exclusion37054_20240826"
 
 ### Liste des stations HYDRO selectionnees ###
 

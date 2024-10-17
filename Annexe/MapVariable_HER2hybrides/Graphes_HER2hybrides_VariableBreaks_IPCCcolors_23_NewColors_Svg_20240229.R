@@ -1,0 +1,481 @@
+### Programmes ###
+source("/home/tjaouen/Documents/Src/PathsProgram/PathProgram_1_20230206.R")
+
+# source("https://raw.githubusercontent.com/imaddowzimet/drawcrosshatch/master/draw_crosshatch.R") 
+
+### Libraries ###
+library(ggplot2)
+library(readxl)
+require(maptools)
+library(rgdal)
+library(maps)
+library(mapdata)
+library(dplyr)
+library(rgeos)
+library(RColorBrewer)
+library(fields)
+library(scales)
+library(strex)
+library(gridExtra)
+library(ggrepel)
+library(sp)
+library(rgdal)
+library(sf)
+library(ggspatial)
+library(tidyverse)
+library(svglite)
+library(latex2exp)
+
+### IPCC colors ###
+
+# Fonction pour extraire les valeurs RGB
+extract_rgb <- function(lines) {
+  rgb_values <- strsplit(lines, " ")[[1]]
+  rgb_values <- rgb_values[rgb_values != ""]
+  rgb_values <- as.integer(rgb_values)
+  rgb_values <- matrix(rgb_values, ncol = 3, byrow = TRUE)
+  return(rgb_values)
+}
+
+createPaletteFromRgbTxt <- function(IPCCcolors_folder_, nomPalette_, size_){
+  
+  # Diviser le texte en lignes
+  text <- readLines(paste0(IPCCcolors_folder_,nomPalette_))
+  lines <- unlist(strsplit(text, "\n"))
+  
+  # Créer la palette de couleurs
+  palette <- list()
+  current_key <- ""
+  
+  if (nomPalette_ == "prec_div_disc.txt"){
+    size_ <- size_ + 3
+  }
+  
+  for (line in lines) {
+    if (grepl("_", line)) {
+      current_key <- as.numeric(str_after_last(line, "_"))
+    } else if (line != "" & current_key == size_) {
+      palette <- rbind(palette, extract_rgb(line))
+    }
+  }
+  palette <- rgb(palette[,1], palette[,2], palette[,3], maxColorValue = 255)
+  return(palette)
+}
+
+
+pattern <- function(x, size, pattern) {
+  ex = list(
+    horizontal = c(1, 2),
+    vertical = c(1, 4),
+    left2right = c(2, 4),
+    right2left = c(1, 3)
+  )
+  fillgrid = st_make_grid(x, cellsize = size)
+  endsf = lapply(1:length(fillgrid), function(j)
+    sf::st_linestring(sf::st_coordinates(fillgrid[j])[ex[[pattern]], 1:2]))
+  endsf = sf::st_sfc(endsf, crs = sf::st_crs(x))
+  endsf = sf::st_intersection(endsf, x)
+  endsf = endsf[sf::st_geometry_type(endsf)
+                %in% c("LINESTRING", "MULTILINESTRING")]
+  endsf = sf::st_line_merge(sf::st_union(endsf))
+  return(endsf)
+}
+
+### Function ###
+plot_map_variable <- function(tab_, varname_, vartitle_, breaks_, output_name_, title_, reverseColors_, nomPalette_, labels_name_ = FALSE, reverseLegend_ = FALSE, echelleAttenuee_ = FALSE, addValueUnder = NULL, HER2_excluesDensity_ = NULL, limits_ = c(0,40)){
+  
+  if (!(is.null(addValueUnder))){
+    breaks_ <- c(addValueUnder,breaks_)
+  }
+  
+  labels_ <- paste0(ifelse(breaks_[-length(breaks_)] == min(breaks_[-length(breaks_)]), "[", "("),
+                    breaks_[-length(breaks_)],",", breaks_[-1],"]")
+  
+  if (labels_name_ == FALSE){
+    labels_name_ <- paste0(ifelse(breaks_[-length(breaks_)] == min(breaks_[-length(breaks_)]), "[", "("),
+                           breaks_[-length(breaks_)],",", breaks_[-1],"]")
+  }
+  
+  ### Import HER2 ###
+  fr.spdf <- readOGR("/home/tjaouen/Documents/Input/HER/HER2hybrides/Shapefile/","HER2_hybrides")
+  proj4string(fr.spdf)=CRS("+proj=longlat +ellps=WGS84")
+  fr.prj <- spTransform(fr.spdf, CRS("+init=epsg:2154")) # trasnformation en Lambert93
+  
+  ### Jonction ###
+  fr.prj$CdHER2[which(fr.prj$CdHER2 == 37)] = "37+54"
+  fr.prj$CdHER2[which(fr.prj$CdHER2 == 54)] = "37+54"
+  fr.prj$CdHER2[which(fr.prj$CdHER2 == 69)] = "69+96"
+  fr.prj$CdHER2[which(fr.prj$CdHER2 == 96)] = "69+96"
+  fr.prj$CdHER2[which(fr.prj$CdHER2 == 31)] = "31+33+39"
+  fr.prj$CdHER2[which(fr.prj$CdHER2 == 33)] = "31+33+39"
+  fr.prj$CdHER2[which(fr.prj$CdHER2 == 39)] = "31+33+39"
+  fr.prj$CdHER2[which(fr.prj$CdHER2 == 89)] = "89+92"
+  fr.prj$CdHER2[which(fr.prj$CdHER2 == 92)] = "89+92"
+  fr.prj$CdHER2[which(fr.prj$CdHER2 == 49)] = "49+90"
+  fr.prj$CdHER2[which(fr.prj$CdHER2 == 90)] = "49+90"
+  
+  fr.prj[[varname_]] = NA
+  if (paste0(varname_,"_IC95inf") %in% colnames(tab_)){
+    fr.prj[[paste0(varname_,"_IC95inf")]] = NA
+    fr.prj[[paste0(varname_,"_IC95sup")]] = NA
+  }  
+  
+  for (i in 1:length(fr.prj$CdHER2)){
+    if (length(which(tab_$HER == fr.prj$CdHER2[i])) > 0){
+      fr.prj[[varname_]][i] = tab_[which(tab_$HER == fr.prj$CdHER2[i]),varname_]
+    }else{
+      fr.prj[[varname_]][i] = NA
+    }
+    if (paste0(varname_,"_IC95inf") %in% colnames(tab_)){
+      if (length(which(tab_$HER == fr.prj$CdHER2[i])) > 0){
+        fr.prj[[paste0(varname_,"_IC95inf")]][i] = tab_[which(tab_$HER == fr.prj$CdHER2[i]),paste0(varname_,"_IC95inf")]
+        fr.prj[[paste0(varname_,"_IC95sup")]][i] = tab_[which(tab_$HER == fr.prj$CdHER2[i]),paste0(varname_,"_IC95sup")]
+      }else{
+        fr.prj[[paste0(varname_,"_IC95inf")]][i] = NA
+        fr.prj[[paste0(varname_,"_IC95sup")]][i] = NA
+      }
+    }
+  }
+  
+  fr.prj$var_cut_ <- as.character(cut(fr.prj[[varname_]], breaks=breaks_, include.lowest = T, labels = labels_))
+  
+  # Legende des HER 2
+  # Extraire les coordonnées des centres de chaque polygone d'hydroécorégion de niveau 2
+  her2_centers <- coordinates(gCentroid(fr.prj, byid=TRUE))
+  # Extraire l'attribut "NUM_HER2" de chaque polygone d'hydroécorégion de niveau 2
+  her2_attrib <- fr.prj$CdHER2
+  # Convertir fr.prj en un dataframe utilisable dans ggplot2
+  fr.df <- fortify(fr.prj)
+  fr.df <- merge(fr.df, as.data.frame(fr.prj@data), by.x = "id", by.y = "row.names", all = TRUE)
+  
+  if (! is.null(HER2_excluesDensity_)){
+    palette_col_ = as.factor(c(palette_col_, "#ffffff")) # "#737373", #1d91c0
+    labels_ = as.factor(c(labels_, "Low data density"))
+    labels_name_ = as.factor(c(labels_name_, "Low data density"))
+    breaks_ = as.factor(c(breaks_, "Low data density"))
+  }
+  
+  # Zoom RMC
+  bbox <- c(xmin = 340000, xmax = 1300000, ymin = 6050000, ymax = 6800000)
+  
+  # Créer la palette de couleurs SurfaceHydroPropSurfHER2
+  txt_ = read_lines(paste0(IPCCcolors_folder_,nomPalette_))
+  length_color_ = max(as.numeric(str_after_last(grep("_", txt_, value = TRUE),"_")))
+  
+  if (reverseColors_ == T){
+    if (echelleAttenuee_ == TRUE){
+      # palette_col_ <- rev(createPaletteFromRgbTxt(IPCCcolors_folder_ = IPCCcolors_folder_, nomPalette_ = nomPalette_, size_ = min(max(length(breaks_),5),length_color_)))
+      palette_col_ <- rev(createPaletteFromRgbTxt(IPCCcolors_folder_ = IPCCcolors_folder_, nomPalette_ = nomPalette_, size_ = min(max(length(breaks_),5),14)))
+    }else{
+      # palette_col_ <- rev(createPaletteFromRgbTxt(IPCCcolors_folder_ = IPCCcolors_folder_, nomPalette_ = nomPalette_, size_ = min(max(length(breaks_)-1,5),length_color_)))
+      palette_col_ <- rev(createPaletteFromRgbTxt(IPCCcolors_folder_ = IPCCcolors_folder_, nomPalette_ = nomPalette_, size_ = min(max(length(breaks_)-1,5),14)))
+    }
+  }else{
+    if (echelleAttenuee_ == TRUE){
+      # palette_col_ <- createPaletteFromRgbTxt(IPCCcolors_folder_ = IPCCcolors_folder_, nomPalette_ = nomPalette_, size_ = min(max(length(breaks_),5), length_color_))
+      palette_col_ <- createPaletteFromRgbTxt(IPCCcolors_folder_ = IPCCcolors_folder_, nomPalette_ = nomPalette_, size_ = min(max(length(breaks_),5), 14))
+    }else{
+      # palette_col_ <- createPaletteFromRgbTxt(IPCCcolors_folder_ = IPCCcolors_folder_, nomPalette_ = nomPalette_, size_ = min(max(length(breaks_)-1,5), length_color_))
+      palette_col_ <- createPaletteFromRgbTxt(IPCCcolors_folder_ = IPCCcolors_folder_, nomPalette_ = nomPalette_, size_ = min(max(length(breaks_)-1,5), 14))
+    }
+  }
+  
+  # Ajustement de la palette
+  if (length(breaks_)-1 > length_color_){
+    stop("Message personnel : Erreur, pas assez de couleurs disponibles dans ce fichier txt de couleurs")
+  }else{
+    if (echelleAttenuee_ == TRUE){
+      palette_col_ <- palette_col_[2:(length(breaks_))]
+    }else{
+      palette_col_ <- palette_col_[1:(length(breaks_)-1)]
+    }
+    if (!(is.null(addValueUnder))){
+      palette_col_ <- c("#ffffff",palette_col_)
+    }
+  }
+  setNames(palette_col_,labels_)
+  
+  df_color_ = setNames(palette_col_,labels_)
+  if (! is.null(HER2_excluesDensity_)){
+    df_color_["Low data density"] = "#ffffff" # "#737373", #1d91c0
+  }
+  
+  fr.df$var_cut_ <- factor(fr.df$var_cut_, levels=labels_)
+  if (! is.null(HER2_excluesDensity_)){
+    fr.df$var_cut_[which(fr.df$CdHER2 %in% HER2_excluesDensity_)] = "Low data density"
+  }
+  hatch_fill <- geom_hline(yintercept = seq(-2, 2, by = 0.5), color = "black", size = 0.5)
+  
+  labels_name_ <- str_before_first(str_after_first(labels_name_,","),"]")
+  
+  # x11()
+  p <- ggplot() +
+    geom_polygon(data=fr.df, aes(x=long, y=lat, group=group, fill=var_cut_), 
+    # geom_polygon(data=fr.df, aes(x=long, y=lat, group=group, fill=Moyenne_Mean_Value), 
+                 color="black", size = 0.3) +
+    scale_fill_manual(values=df_color_,
+                      name=vartitle_,
+                      breaks=labels_,
+                      # labels = "",
+                      # labels = TeX(labels_name_),
+                      drop = F)
+    # scale_fill_gradientn(colors = palette_col_,
+    #                      name = vartitle_,
+    #                      limits = c(min(limits_),max(limits_)),
+    #                      guide = "legend",
+    #                      breaks = breaks_,
+    #                      labels = breaks_,
+    #                      n = length(palette_col_))  # Assurez-vous de bien mettre FALSE plutôt que F
+  if (paste0(varname_,"_IC95inf") %in% colnames(tab_)){
+    p <- p + geom_label_repel(data = data.frame(x = her2_centers[,1], y = her2_centers[,2],
+                                                label = paste0(her2_attrib, ifelse(is.na(fr.prj[[varname_]]),"",paste0(" : ",round(fr.prj[[varname_]],2),"\n[",round(fr.prj[[paste0(varname_,"_IC95inf")]],2),";",round(fr.prj[[paste0(varname_,"_IC95sup")]],2),"]")))),
+                              aes(x = x, y = y, label = label),
+                              fill.alpha = 0.5,
+                              box.padding = 0.5,
+                              col = "black", size = 3, segment.alpha = 1,
+                              force = 10)
+  }else{
+    p <- p + geom_label_repel(data = data.frame(x = her2_centers[,1], y = her2_centers[,2],
+                                                label = paste0(her2_attrib, ifelse(is.na(fr.prj[[varname_]]),"",paste0(" : ",round(fr.prj[[varname_]],2))))),
+                              aes(x = x, y = y, label = label),
+                              fill.alpha = 0.5,
+                              box.padding = 0.5,
+                              col = "black", size = 3, segment.alpha = 1,
+                              force = 10)
+  }
+  p <- p + ggtitle(title_) +
+  theme(legend.position = c(0.92,0.5),
+        axis.line = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title = element_blank(),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 0),
+        # legend.text = element_text(vjust = 3, size = 12),
+        legend.key.height = unit(1.3, 'cm'),
+        panel.background = element_blank(),
+        text = element_text(size = 26),
+        plot.title = element_text(size = 30, hjust = 0.5))+
+    guides(fill = guide_legend(reverse = reverseLegend_,
+                               override.aes = list(color = NULL)))+
+    coord_fixed(ratio = 1)
+  #fill = guide_colorbar(barwidth = 1, barheight = 10),
+  
+  p <- p + annotation_scale(location = "br",
+                            line_width = .8,
+                            text_cex = 0.7,
+                            pad_x = unit(4, "cm"), pad_y = unit(1.5, "cm"),
+                            style = 'ticks') +
+    annotation_north_arrow(location = "br", height = unit(0.7, "cm"), width = unit(0.7, "cm"),
+                           pad_x = unit(10.4, "cm"), pad_y = unit(2.5, "cm"))
+  # style = north_arrow_fancy_orienteering)
+  # p <- p + theme(plot.margin = margin(5.5, 5.5, 5.5, 5.5))
+  p
+
+  # p <- p + annotation_scale(x = 1242327, y = 6326432, line_width = .8, text_cex = 1)
+  # p <- p + annotation_north_arrow(x = 1242327, y = 6326432, height = unit(0.7, "cm"), width = unit(0.7, "cm"))
+  
+  
+  # 1   0 468634.4 6326432     1 FALSE     1   0.1       13         13     21      13     13       NA       NA
+  # 2   0 468330.1 6326040     2 FALSE     1   0.1       13         13     21      13     13       NA       NA
+  # 3   0 467172.0 6326009     3 FALSE     1   0.1       13         13     21      13     13       NA       NA
+  # 4   0 467160.5 6326008     4 FALSE     1   0.1       13         13     21      13     13       NA       NA
+  # 5   0 467159.3 6326009     5 FALSE     1   0.1       13         13     21      13     13       NA       NA
+  # 6   0 465320.3 6326596     6 FALSE     1   0.1       13         13     21      13     13       NA       NA
+  # 7   0 465315.4 6326598     7 FALSE     1   0.1       13         13     21      13     13       NA       NA
+  # 8   0 465307.5 6326596     8 FALSE     1   0.1       13         13     21      13     13       NA       NA
+  # 9   0 464805.5 6326504     9 FALSE     1   0.1       13         13     21      13     13       NA       NA
+  # 10  0 463734.1 6326267    10 FALSE     1   0.1       13         13     21      13     13       NA       NA
+  
+  
+  # Save
+  svg_device <- svglite(paste0(output_name_,".svg"),
+                        width = 18)
+  print(p)
+  dev.off()
+  
+  saveRDS(p, file = paste0(output_name_,".rds"))
+  
+}
+
+
+### Function ###
+plot_map_variable_sansEtiquettes <- function(tab_, varname_, vartitle_, breaks_, output_name_, title_, reverseColors_, nomPalette_, labels_name_ = FALSE, sansTexteHer_ = FALSE, reverseLegend_ = FALSE, echelleAttenuee_ = FALSE, addValueUnder = NULL, HER2_excluesDensity_ = NULL, limits_ = c(0,40)){
+  
+  if (!(is.null(addValueUnder))){
+    breaks_ <- c(addValueUnder,breaks_)
+  }
+  
+  labels_ <- paste0(ifelse(breaks_[-length(breaks_)] == min(breaks_[-length(breaks_)]), "[", "("),
+                    breaks_[-length(breaks_)],",", breaks_[-1],"]")
+  
+  if (labels_name_ == FALSE){
+    labels_name_ <- paste0(ifelse(breaks_[-length(breaks_)] == min(breaks_[-length(breaks_)]), "[", "("),
+                           breaks_[-length(breaks_)],",", breaks_[-1],"]")
+  }
+  # else{
+  #   labels_name_ <- paste0(ifelse(labels_name_[-length(labels_name_)] == min(labels_name_[-length(labels_name_)]), "[", "("),
+  #                          labels_name_[-length(labels_name_)],",", labels_name_[-1],"]")
+  # }
+  
+  ### Import HER2 ###
+  fr.spdf <- readOGR("/home/tjaouen/Documents/Input/HER/HER2hybrides/Shapefile/","HER2_hybrides")
+  proj4string(fr.spdf)=CRS("+proj=longlat +ellps=WGS84")
+  fr.prj <- spTransform(fr.spdf, CRS("+init=epsg:2154")) # trasnformation en Lambert93
+  
+  ### Jonction ###
+  fr.prj$CdHER2[which(fr.prj$CdHER2 == 37)] = "37+54"
+  fr.prj$CdHER2[which(fr.prj$CdHER2 == 54)] = "37+54"
+  fr.prj$CdHER2[which(fr.prj$CdHER2 == 69)] = "69+96"
+  fr.prj$CdHER2[which(fr.prj$CdHER2 == 96)] = "69+96"
+  fr.prj$CdHER2[which(fr.prj$CdHER2 == 31)] = "31+33+39"
+  fr.prj$CdHER2[which(fr.prj$CdHER2 == 33)] = "31+33+39"
+  fr.prj$CdHER2[which(fr.prj$CdHER2 == 39)] = "31+33+39"
+  fr.prj$CdHER2[which(fr.prj$CdHER2 == 89)] = "89+92"
+  fr.prj$CdHER2[which(fr.prj$CdHER2 == 92)] = "89+92"
+  fr.prj$CdHER2[which(fr.prj$CdHER2 == 49)] = "49+90"
+  fr.prj$CdHER2[which(fr.prj$CdHER2 == 90)] = "49+90"
+  
+  fr.prj[[varname_]] = NA
+  if (paste0(varname_,"_IC95inf") %in% colnames(tab_)){
+    fr.prj[[paste0(varname_,"_IC95inf")]] = NA
+    fr.prj[[paste0(varname_,"_IC95sup")]] = NA
+  }  
+  
+  for (i in 1:length(fr.prj$CdHER2)){
+    if (length(which(tab_$HER == fr.prj$CdHER2[i])) > 0){
+      fr.prj[[varname_]][i] = tab_[which(tab_$HER == fr.prj$CdHER2[i]),varname_]
+    }else{
+      fr.prj[[varname_]][i] = NA
+    }
+    if (paste0(varname_,"_IC95inf") %in% colnames(tab_)){
+      if (length(which(tab_$HER == fr.prj$CdHER2[i])) > 0){
+        fr.prj[[paste0(varname_,"_IC95inf")]][i] = tab_[which(tab_$HER == fr.prj$CdHER2[i]),paste0(varname_,"_IC95inf")]
+        fr.prj[[paste0(varname_,"_IC95sup")]][i] = tab_[which(tab_$HER == fr.prj$CdHER2[i]),paste0(varname_,"_IC95sup")]
+      }else{
+        fr.prj[[paste0(varname_,"_IC95inf")]][i] = NA
+        fr.prj[[paste0(varname_,"_IC95sup")]][i] = NA
+      }
+    }
+  }
+  
+  fr.prj$var_cut_ <- cut(fr.prj[[varname_]], breaks=breaks_, include.lowest = T, label = labels_)
+  
+  # Legende des HER 2
+  # Extraire les coordonnées des centres de chaque polygone d'hydroécorégion de niveau 2
+  her2_centers <- coordinates(gCentroid(fr.prj, byid=TRUE))
+  
+  # Extraire l'attribut "NUM_HER2" de chaque polygone d'hydroécorégion de niveau 2
+  her2_attrib <- fr.prj$CdHER2
+  
+  # Convertir fr.prj en un dataframe utilisable dans ggplot2
+  fr.df <- fortify(fr.prj)
+  fr.df <- merge(fr.df, as.data.frame(fr.prj@data), by.x = "id", by.y = "row.names", all = TRUE)
+  
+  if (! is.null(HER2_excluesDensity_)){
+    palette_col_ = as.factor(c(palette_col_, "#ffffff")) # "#737373", #1d91c0
+    labels_ = as.factor(c(labels_, "Low data density"))
+    labels_name_ = as.factor(c(labels_name_, "Low data density"))
+    breaks_ = as.factor(c(breaks_, "Low data density"))
+  }
+  
+  # Zoom RMC
+  bbox <- c(xmin = 340000, xmax = 1300000, ymin = 6050000, ymax = 6800000)
+  
+  # Créer la palette de couleurs SurfaceHydroPropSurfHER2
+  txt_ = read_lines(paste0(IPCCcolors_folder_,nomPalette_))
+  length_color_ = max(as.numeric(str_after_last(grep("_", txt_, value = TRUE),"_")))
+  
+  if (reverseColors_ == T){
+    if (echelleAttenuee_ == TRUE){
+      palette_col_ <- rev(createPaletteFromRgbTxt(IPCCcolors_folder_ = IPCCcolors_folder_, nomPalette_ = nomPalette_, size_ =  min(max(length(breaks_),5),length_color_)))
+    }else{
+      palette_col_ <- rev(createPaletteFromRgbTxt(IPCCcolors_folder_ = IPCCcolors_folder_, nomPalette_ = nomPalette_, size_ =  min(max(length(breaks_) - 1,5),length_color_)))
+    }
+  }else{
+    if (echelleAttenuee_ == TRUE){
+      palette_col_ <- createPaletteFromRgbTxt(IPCCcolors_folder_ = IPCCcolors_folder_, nomPalette_ = nomPalette_, size_ =  min(max(length(breaks_),5),length_color_))
+    }else{
+      palette_col_ <- createPaletteFromRgbTxt(IPCCcolors_folder_ = IPCCcolors_folder_, nomPalette_ = nomPalette_, size_ =  min(max(length(breaks_) - 1,5),length_color_))
+    }
+  }
+  
+  # Ajustement de la palette
+  if (length(breaks_)-1 > length_color_){
+    stop("Message personnel : Erreur, pas assez de couleurs disponibles dans ce fichier txt de couleurs")
+  }else{
+    if (echelleAttenuee_ == TRUE){
+      palette_col_ <- palette_col_[2:(length(breaks_))]
+    }else{
+      palette_col_ <- palette_col_[1:(length(breaks_)-1)]
+    }
+    if (!(is.null(addValueUnder))){
+      palette_col_ <- c("#ffffff",palette_col_)
+    }
+  }
+  
+  # df_color_ = setNames(palette_col_,labels_name_)
+  df_color_ = setNames(palette_col_,labels_)
+  if (! is.null(HER2_excluesDensity_)){
+    df_color_["Low data density"] = "#ffffff" # "#737373", #1d91c0
+  }
+  
+  fr.df$var_cut_ <- factor(fr.df$var_cut_, levels=labels_)
+  
+  if (! is.null(HER2_excluesDensity_)){
+    fr.df$var_cut_[which(fr.df$CdHER2 %in% HER2_excluesDensity_)] = "Low data density"
+  }
+  
+  
+  
+  
+  
+  
+  p <- ggplot() +
+    geom_polygon(data=fr.df, aes(x=long, y=lat, group=group, fill=Moyenne_Mean_Value), 
+                 color="black") +
+    scale_fill_gradientn(colors = palette_col_,
+                         name = vartitle_,
+                         limits = c(min(limits_),max(limits_)),
+                         guide = "legend",
+                         breaks = seq(limits_[1], limits_[2], by = 10),
+                         labels = seq(limits_[1], limits_[2], by = 10),
+                         n = length(palette_col_))  # Assurez-vous de bien mettre FALSE plutôt que F
+  if (sansTexteHer_ == FALSE){
+    p <- p + geom_text(data = data.frame(x = her2_centers[,1], y = her2_centers[,2], label = her2_attrib),
+                       aes(x = x, y = y, label = label),
+                       col = "black", size = 4, segment.alpha = 0.3,
+                       force = 10)
+  }
+  p <- p + ggtitle(title_) +
+    guides(fill = guide_colorbar(barwidth = 1, barheight = 10))+
+    # guide_legend(reverse = reverseLegend_,
+    #                     keywidth = 2,
+    #                     keyheight = 2)) +
+    theme(axis.line = element_blank(),
+          axis.text = element_blank(),
+          axis.ticks = element_blank(),
+          axis.title = element_blank(),
+          legend.title = element_blank(),
+          panel.background = element_blank(),
+          text = element_text(size = 26),
+          plot.title = element_text(size = 30, hjust = 0.5))+
+    coord_fixed(ratio = 1)
+  p <- p + annotation_scale(location = "bl", line_width = .8, text_cex = 1) +
+    annotation_north_arrow(location = "tl", height = unit(0.7, "cm"), width = unit(0.7, "cm"))
+  
+  
+  # Save
+  svg_device <- svglite(paste0(output_name_,"_sansEt.svg"),
+                        width = 18)
+  print(p)
+  dev.off()
+  
+  saveRDS(p, file = paste0(output_name_,"_sansEt.rds"))
+  
+}
+
+
+
+
+

@@ -511,8 +511,9 @@ for (filename_ in filenames_){
   # "/TableGlobale/Map_English/5_Map_Globale_Biais_General_NonBoot/",str_before_first(basename(filename_),pattern = ".csv"),"_sansEtiq.pdf")
   plot_map_variable_sansEtiquettes(tab_ = tab_results_,
                                    varname_ = "Biais_general",
-                                   vartitle_ = "Bias (unitless)",
-                                   breaks_ = breaks_Biais,
+                                   vartitle_ = "Bias\n(unitless)",
+                                   # breaks_ = breaks_Biais,
+                                   breaks_ = c(-50.0,-5.0,-1.0,-0.1,-0.05,0.05,0.1,1.0,5.0,50.0),
                                    output_name_ = output_name_,
                                    title_ = paste0("Validation during ",ifelse(nomAnneeTest_=="sèches","dry",
                                                                                ifelse(nomAnneeTest_=="intermédiaires","intermediate",
@@ -529,7 +530,10 @@ for (filename_ in filenames_){
                                    annotation_txt_ = T,
                                    percentFormat = F,
                                    doubleLegend_ = F,
-                                   borderCol = "gray70")
+                                   borderCol = "gray70",
+                                   taillePalette = 11,
+                                   retenuPalette = 11,
+                                   labels_direct = c("<(-5)","-5","-1","-0.1","-0.05","0.05","0.1","1","5",">5"))
   
   ### Erreur Moyenne Absolue ###
   if (!(dir.exists(paste0(folder_output_,
@@ -580,7 +584,8 @@ for (filename_ in filenames_){
                                    doubleLegend_ = F,
                                    borderCol = "gray70",
                                    taillePalette = length(breaks_ErrMoyAbs)+1,
-                                   retenuPalette = length(breaks_ErrMoyAbs))
+                                   retenuPalette = length(breaks_ErrMoyAbs),
+                                   labels_direct = c("0","2","4","6","8","10","15",">15"))
   
   ### RMSE ###
   if (!(dir.exists(paste0(folder_output_,
@@ -630,7 +635,8 @@ for (filename_ in filenames_){
                                    doubleLegend_ = F,
                                    borderCol = "gray70",
                                    taillePalette = length(breaks_RMSE)+1,
-                                   retenuPalette = length(breaks_RMSE))
+                                   retenuPalette = length(breaks_RMSE),
+                                   labels_direct = c("0","2","4","6","8","10","15","20",">20"))
   
   ### NSE ###
   breaks_NSE_ <- breaks_NSE_param
@@ -686,8 +692,3 @@ for (filename_ in filenames_){
                                    retenuPalette = length(breaks_NSE_)+1)
 
 }
-
-
-
-
-

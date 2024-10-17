@@ -142,7 +142,8 @@ for (HER_ in HER_list_){
   for (l in 1:nrow(Y_rcp45_select_)){
     test_ <- mk.test(Y_rcp45_select_[l,], alternative = "two.sided", continuity = TRUE)
     if (test_$p.value < alpha){
-      if (test_$pvalg > 0){
+      # if (test_$pvalg > 0){
+      if (test_$estimates[[1]] > 0){
         Y_comp_[l] <- 1
       }else{
         Y_comp_[l] <- -1
@@ -302,7 +303,8 @@ for (HER_ in HER_list_){
     for (l in 1:nrow(Y_rcp45_select_)){
       test_ <- mk.test(Y_rcp45_select_[l,], alternative = "two.sided", continuity = TRUE)
       if (test_$p.value < alpha){
-        if (test_$pvalg > 0){
+        # if (test_$pvalg > 0){
+        if (test_$estimates[[1]] > 0){
           Y_comp_[l] <- 1
         }else{
           Y_comp_[l] <- -1
@@ -831,7 +833,8 @@ plot_map_variable_sansEtiquettes(tab_ = col_means_merge,
                                  vartitle_ = "MIA (%)",
                                  # breaks_ = breaks_ProbaAssecMoyenne,
                                  breaks_ = c(-100,-80,-60,-40,-20,0,20,40,60,80,100),
-                                 output_name_ = "/media/tjaouen/Ultra Touch/Backup/Main/Output/ChangementClimatique2019/EtudeFrance/22_GrapheChroniqueProbabilite_OneModelHorizon20702100_Projections/32_ObservesReanalyseSafran_ApprentissageTousScenariosProjections_20240208/StatistiquesPFI/MIA/Map/IndexMIAparHER_CTRIP_Rcp45_1_20240705",
+                                 # output_name_ = "/media/tjaouen/Ultra Touch/Backup/Main/Output/ChangementClimatique2019/EtudeFrance/22_GrapheChroniqueProbabilite_OneModelHorizon20702100_Projections/32_ObservesReanalyseSafran_ApprentissageTousScenariosProjections_20240208/StatistiquesPFI/MIA/Map/IndexMIAparHER_CTRIP_Rcp45_1_20240705",
+                                 output_name_ = "/media/tjaouen/Ultra Touch/Backup/Main/Output/ChangementClimatique2019/EtudeFrance/22_GrapheChroniqueProbabilite_OneModelHorizon20702100_Projections/32_ObservesReanalyseSafran_ApprentissageTousScenariosProjections_20240208/StatistiquesPFI/MIA/Map/IndexMIAparHER_CTRIP_Rcp45_AvecEstimates_4_1_20240705",
                                  title_ = paste0("MIA"),
                                  # nomPalette_ = "cryo_div_disc.txt",
                                  # nomPalette_ = "sequence_beigeBleu_personnelle_div_disc.txt", # "sequence_vertRouge_personnelle_div_disc.txt"
@@ -856,7 +859,8 @@ varname_ = "CTRIP"
 vartitle_ = "Probability (%)"
 # breaks_ = breaks_ProbaAssecMoyenne,
 breaks_ = c(-100,-80,-60,-40,-20,0,20,40,60,80,100)
-output_name_ = "/media/tjaouen/Ultra Touch/Backup/Main/Output/ChangementClimatique2019/EtudeFrance/22_GrapheChroniqueProbabilite_OneModelHorizon20702100_Projections/32_ObservesReanalyseSafran_ApprentissageTousScenariosProjections_20240208/StatistiquesPFI/MIA/Map/IndexMIAparHER_CTRIP_Rcp45_1_20240705"
+# output_name_ = "/media/tjaouen/Ultra Touch/Backup/Main/Output/ChangementClimatique2019/EtudeFrance/22_GrapheChroniqueProbabilite_OneModelHorizon20702100_Projections/32_ObservesReanalyseSafran_ApprentissageTousScenariosProjections_20240208/StatistiquesPFI/MIA/Map/IndexMIAparHER_CTRIP_Rcp45_1_20240705"
+output_name_ = "/media/tjaouen/Ultra Touch/Backup/Main/Output/ChangementClimatique2019/EtudeFrance/22_GrapheChroniqueProbabilite_OneModelHorizon20702100_Projections/32_ObservesReanalyseSafran_ApprentissageTousScenariosProjections_20240208/StatistiquesPFI/MIA/Map/IndexMIAparHER_CTRIP_Rcp45_AvecEstimates_4_1_20240705"
 title_ = paste0("MIA")
 # nomPalette_ = "cryo_div_disc.txt",
 # nomPalette_ = "sequence_beigeBleu_personnelle_div_disc.txt", # "sequence_vertRouge_personnelle_div_disc.txt"
@@ -892,7 +896,8 @@ plot_map_variable_sansEtiquettes(tab_ = col_means_merge,
                                  vartitle_ = "MIA (%)",
                                  # breaks_ = breaks_ProbaAssecMoyenne,
                                  breaks_ = c(-100,-80,-60,-40,-20,0,20,40,60,80,100),
-                                 output_name_ = "/media/tjaouen/Ultra Touch/Backup/Main/Output/ChangementClimatique2019/EtudeFrance/22_GrapheChroniqueProbabilite_OneModelHorizon20702100_Projections/32_ObservesReanalyseSafran_ApprentissageTousScenariosProjections_20240208/StatistiquesPFI/MIA/Map/IndexMIAparHER_GRSD_Rcp45_1_20240705",
+                                 # output_name_ = "/media/tjaouen/Ultra Touch/Backup/Main/Output/ChangementClimatique2019/EtudeFrance/22_GrapheChroniqueProbabilite_OneModelHorizon20702100_Projections/32_ObservesReanalyseSafran_ApprentissageTousScenariosProjections_20240208/StatistiquesPFI/MIA/Map/IndexMIAparHER_GRSD_Rcp45_1_20240705",
+                                 output_name_ = "/media/tjaouen/Ultra Touch/Backup/Main/Output/ChangementClimatique2019/EtudeFrance/22_GrapheChroniqueProbabilite_OneModelHorizon20702100_Projections/32_ObservesReanalyseSafran_ApprentissageTousScenariosProjections_20240208/StatistiquesPFI/MIA/Map/IndexMIAparHER_GRSD_Rcp45_AvecEstimates_4_1_20240705",
                                  title_ = paste0("MIA"),
                                  # nomPalette_ = "cryo_div_disc.txt",
                                  # nomPalette_ = "sequence_beigeBleu_personnelle_div_disc.txt", # "sequence_vertRouge_personnelle_div_disc.txt"
@@ -917,7 +922,8 @@ plot_map_variable_sansEtiquettes(tab_ = col_means_merge,
                                  vartitle_ = "MIA (%)",
                                  # breaks_ = breaks_ProbaAssecMoyenne,
                                  breaks_ = c(-100,-80,-60,-40,-20,0,20,40,60,80,100),
-                                 output_name_ = "/media/tjaouen/Ultra Touch/Backup/Main/Output/ChangementClimatique2019/EtudeFrance/22_GrapheChroniqueProbabilite_OneModelHorizon20702100_Projections/32_ObservesReanalyseSafran_ApprentissageTousScenariosProjections_20240208/StatistiquesPFI/MIA/Map/IndexMIAparHER_J2000_Rcp45_1_20240705",
+                                 # output_name_ = "/media/tjaouen/Ultra Touch/Backup/Main/Output/ChangementClimatique2019/EtudeFrance/22_GrapheChroniqueProbabilite_OneModelHorizon20702100_Projections/32_ObservesReanalyseSafran_ApprentissageTousScenariosProjections_20240208/StatistiquesPFI/MIA/Map/IndexMIAparHER_J2000_Rcp45_1_20240705",
+                                 output_name_ = "/media/tjaouen/Ultra Touch/Backup/Main/Output/ChangementClimatique2019/EtudeFrance/22_GrapheChroniqueProbabilite_OneModelHorizon20702100_Projections/32_ObservesReanalyseSafran_ApprentissageTousScenariosProjections_20240208/StatistiquesPFI/MIA/Map/IndexMIAparHER_J2000_Rcp45_AvecEstimates_4_1_20240705",
                                  title_ = paste0("MIA"),
                                  # nomPalette_ = "cryo_div_disc.txt",
                                  # nomPalette_ = "sequence_beigeBleu_personnelle_div_disc.txt", # "sequence_vertRouge_personnelle_div_disc.txt"
@@ -942,7 +948,8 @@ plot_map_variable_sansEtiquettes(tab_ = col_means_merge,
                                  vartitle_ = "MIA (%)",
                                  # breaks_ = breaks_ProbaAssecMoyenne,
                                  breaks_ = c(-100,-80,-60,-40,-20,0,20,40,60,80,100),
-                                 output_name_ = "/media/tjaouen/Ultra Touch/Backup/Main/Output/ChangementClimatique2019/EtudeFrance/22_GrapheChroniqueProbabilite_OneModelHorizon20702100_Projections/32_ObservesReanalyseSafran_ApprentissageTousScenariosProjections_20240208/StatistiquesPFI/MIA/Map/IndexMIAparHER_ORCHIDEE_Rcp45_1_20240705",
+                                 # output_name_ = "/media/tjaouen/Ultra Touch/Backup/Main/Output/ChangementClimatique2019/EtudeFrance/22_GrapheChroniqueProbabilite_OneModelHorizon20702100_Projections/32_ObservesReanalyseSafran_ApprentissageTousScenariosProjections_20240208/StatistiquesPFI/MIA/Map/IndexMIAparHER_ORCHIDEE_Rcp45_1_20240705",
+                                 output_name_ = "/media/tjaouen/Ultra Touch/Backup/Main/Output/ChangementClimatique2019/EtudeFrance/22_GrapheChroniqueProbabilite_OneModelHorizon20702100_Projections/32_ObservesReanalyseSafran_ApprentissageTousScenariosProjections_20240208/StatistiquesPFI/MIA/Map/IndexMIAparHER_ORCHIDEE_Rcp45_AvecEstimates_4_1_20240705",
                                  title_ = paste0("MIA"),
                                  # nomPalette_ = "cryo_div_disc.txt",
                                  # nomPalette_ = "sequence_beigeBleu_personnelle_div_disc.txt", # "sequence_vertRouge_personnelle_div_disc.txt"
@@ -967,7 +974,8 @@ plot_map_variable_sansEtiquettes(tab_ = col_means_merge,
                                  vartitle_ = "MIA (%)",
                                  # breaks_ = breaks_ProbaAssecMoyenne,
                                  breaks_ = c(-100,-80,-60,-40,-20,0,20,40,60,80,100),
-                                 output_name_ = "/media/tjaouen/Ultra Touch/Backup/Main/Output/ChangementClimatique2019/EtudeFrance/22_GrapheChroniqueProbabilite_OneModelHorizon20702100_Projections/32_ObservesReanalyseSafran_ApprentissageTousScenariosProjections_20240208/StatistiquesPFI/MIA/Map/IndexMIAparHER_SMASH_Rcp45_1_20240705",
+                                 # output_name_ = "/media/tjaouen/Ultra Touch/Backup/Main/Output/ChangementClimatique2019/EtudeFrance/22_GrapheChroniqueProbabilite_OneModelHorizon20702100_Projections/32_ObservesReanalyseSafran_ApprentissageTousScenariosProjections_20240208/StatistiquesPFI/MIA/Map/IndexMIAparHER_SMASH_Rcp45_1_20240705",
+                                 output_name_ = "/media/tjaouen/Ultra Touch/Backup/Main/Output/ChangementClimatique2019/EtudeFrance/22_GrapheChroniqueProbabilite_OneModelHorizon20702100_Projections/32_ObservesReanalyseSafran_ApprentissageTousScenariosProjections_20240208/StatistiquesPFI/MIA/Map/IndexMIAparHER_SMASH_Rcp45_AvecEstimates_4_1_20240705",
                                  title_ = paste0("MIA"),
                                  # nomPalette_ = "cryo_div_disc.txt",
                                  # nomPalette_ = "sequence_beigeBleu_personnelle_div_disc.txt", # "sequence_vertRouge_personnelle_div_disc.txt"
@@ -993,7 +1001,8 @@ plot_map_variable_sansEtiquettes(tab_ = col_means_merge,
                                  vartitle_ = "MIA (%)",
                                  # breaks_ = breaks_ProbaAssecMoyenne,
                                  breaks_ = c(-100,-80,-60,-40,-20,0,20,40,60,80,100),
-                                 output_name_ = "/media/tjaouen/Ultra Touch/Backup/Main/Output/ChangementClimatique2019/EtudeFrance/22_GrapheChroniqueProbabilite_OneModelHorizon20702100_Projections/32_ObservesReanalyseSafran_ApprentissageTousScenariosProjections_20240208/StatistiquesPFI/MIA/Map/IndexMIAparHER_Total_Rcp45_1_20240705",
+                                 # output_name_ = "/media/tjaouen/Ultra Touch/Backup/Main/Output/ChangementClimatique2019/EtudeFrance/22_GrapheChroniqueProbabilite_OneModelHorizon20702100_Projections/32_ObservesReanalyseSafran_ApprentissageTousScenariosProjections_20240208/StatistiquesPFI/MIA/Map/IndexMIAparHER_Total_Rcp45_1_20240705",
+                                 output_name_ = "/media/tjaouen/Ultra Touch/Backup/Main/Output/ChangementClimatique2019/EtudeFrance/22_GrapheChroniqueProbabilite_OneModelHorizon20702100_Projections/32_ObservesReanalyseSafran_ApprentissageTousScenariosProjections_20240208/StatistiquesPFI/MIA/Map/IndexMIAparHER_Total_Rcp45_AvecEstimates_4_1_20240705",
                                  title_ = paste0("MIA"),
                                  # nomPalette_ = "cryo_div_disc.txt",
                                  # nomPalette_ = "sequence_beigeBleu_personnelle_div_disc.txt", # "sequence_vertRouge_personnelle_div_disc.txt"

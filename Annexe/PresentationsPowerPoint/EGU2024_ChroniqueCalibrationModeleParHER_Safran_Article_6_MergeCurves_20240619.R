@@ -19,8 +19,8 @@ library(zoo)
 ### Parameters ###
 nom_categorieSimu_ <- nom_categorieSimu_param_
 
-# HER_h_ <- 57
-HER_h_ <- 81
+HER_h_ <- 57
+# HER_h_ <- 81
 # HER_h_ <- 12
 # HER_h_ <- 13
 # HER_h_ <- 105
@@ -258,8 +258,8 @@ p_mean <- ggplot() +
   #                    # labels = function(x) paste0(x, "%")) + # Supprimer l'espace entre l'axe des abscisses et la première valeur de y
   
 labs(title = "Moyenne des probabilités d'assecs lissées sur 5 jours",
-     # subtitle = paste0("HER 57 Tables calcaires Haute Normandie Picardie"),
-     subtitle = paste0("HER ",HER_h_," ",descriptionHER_$NomHER2[which(descriptionHER_$CdHER2 == HER_h_)]),#,
+   subtitle = paste0("HER2 57 Tables calcaires Haute Normandie Picardie"),
+     # subtitle = paste0("HER2 ",HER_h_," ",descriptionHER_$NomHER2[which(descriptionHER_$CdHER2 == HER_h_)]),#,
      # "\nPériode : ",year(date_intervalle_[1]),"-",year(date_intervalle_[2]),
      # " - Modèle hydrologique : ",str_before_first(nom_categorieSimu_,"_")),
      x = "Date",
@@ -297,6 +297,7 @@ labs(title = "Moyenne des probabilités d'assecs lissées sur 5 jours",
         legend.spacing.y = unit(+0.03, "cm"))+
   scale_color_manual(values = custom_colors,
                      name = "Hydrological model") +
+
   guides(color = guide_legend(override.aes = list(lwd = 2)))
 # guides(alpha = guide_legend(override.aes = list(lwd = 2.5,color =levels(df_mean_nonNar_$Color)),
 #                             keyheight = 3.2,
@@ -318,23 +319,27 @@ p_mean
 
 # pdf(paste0("/home/tjaouen/Documents/Administratif/Conferences/EGU2024/Presentation/Images_JaouenTristan/ChroniqueCalibration_HER",HER_h_,"_Observed_3_20240606.pdf"),
 # pdf(paste0("/home/tjaouen/Documents/Administratif/Conferences/EGU2024/Presentation/Images_JaouenTristan/CalibrationSafran/ChroniqueCalibration_HER",HER_h_,"_Safran_",model_,"_1_20240610.pdf"),
-pdf(paste0("/home/tjaouen/Documents/Administratif/Conferences/EGU2024/Presentation/Images_JaouenTristan/CalibrationSafran/ChroniqueCalibration_HER",HER_h_,"_Safran_1_20240709.pdf"),
+# pdf(paste0("/home/tjaouen/Documents/Administratif/Conferences/EGU2024/Presentation/Images_JaouenTristan/CalibrationSafran/ChroniqueCalibration_HER",HER_h_,"_Safran_1_20240709.pdf"),
+pdf(paste0("/home/tjaouen/Documents/Administratif/Conferences/EGU2024/Presentation/Images_JaouenTristan/CalibrationSafran/ChroniqueCalibration_HER",HER_h_,"_Safran_1_20240823.pdf"),
     width = 18)
 plot(p_mean)
 dev.off()
 
 # saveRDS(p_mean, file = paste0("/home/tjaouen/Documents/Administratif/Conferences/EGU2024/Presentation/Images_JaouenTristan/ChroniqueCalibration_HER",HER_h_,"_Observed_3_20240606.rds"))
 # saveRDS(p_mean, file = paste0("/home/tjaouen/Documents/Administratif/Conferences/EGU2024/Presentation/Images_JaouenTristan/CalibrationSafran/ChroniqueCalibration_HER",HER_h_,"_Safran_",model_,"_1_20240610.rds"))
-saveRDS(p_mean, file = paste0("/home/tjaouen/Documents/Administratif/Conferences/EGU2024/Presentation/Images_JaouenTristan/CalibrationSafran/ChroniqueCalibration_HER",HER_h_,"_Safran_1_20240709.rds"))
+# saveRDS(p_mean, file = paste0("/home/tjaouen/Documents/Administratif/Conferences/EGU2024/Presentation/Images_JaouenTristan/CalibrationSafran/ChroniqueCalibration_HER",HER_h_,"_Safran_1_20240709.rds"))
+saveRDS(p_mean, file = paste0("/home/tjaouen/Documents/Administratif/Conferences/EGU2024/Presentation/Images_JaouenTristan/CalibrationSafran/ChroniqueCalibration_HER",HER_h_,"_Safran_1_20240823.rds"))
 
 # svg_device <- svglite(paste0("/home/tjaouen/Documents/Administratif/Conferences/EGU2024/Presentation/Images_JaouenTristan/ChroniqueCalibration_HER",HER_h_,"_Observed_3_20240606.svg"), width = 18)#,
 # svg_device <- svglite(paste0("/home/tjaouen/Documents/Administratif/Conferences/EGU2024/Presentation/Images_JaouenTristan/CalibrationSafran/ChroniqueCalibration_HER",HER_h_,"_Safran_",model_,"_1_20240610.svg"), width = 18)#,
-svg_device <- svglite(paste0("/home/tjaouen/Documents/Administratif/Conferences/EGU2024/Presentation/Images_JaouenTristan/CalibrationSafran/ChroniqueCalibration_HER",HER_h_,"_Safran_1_20240709.svg"), width = 18)#,
+# svg_device <- svglite(paste0("/home/tjaouen/Documents/Administratif/Conferences/EGU2024/Presentation/Images_JaouenTristan/CalibrationSafran/ChroniqueCalibration_HER",HER_h_,"_Safran_1_20240709.svg"), width = 18)#,
+svg_device <- svglite(paste0("/home/tjaouen/Documents/Administratif/Conferences/EGU2024/Presentation/Images_JaouenTristan/CalibrationSafran/ChroniqueCalibration_HER",HER_h_,"_Safran_1_20240823.svg"), width = 18)#,
 plot(p_mean)
 dev.off()
 
 # png(paste0("/home/tjaouen/Documents/Administratif/Conferences/EGU2024/Presentation/Images_JaouenTristan/ChroniqueCalibration_HER",HER_h_,"_Observed_3_20240606.png"), width = 9*100)
 # png(paste0("/home/tjaouen/Documents/Administratif/Conferences/EGU2024/Presentation/Images_JaouenTristan/CalibrationSafran/ChroniqueCalibration_HER",HER_h_,"_Safran_",model_,"_1_20240610.png"), width = 9*100)
-png(paste0("/home/tjaouen/Documents/Administratif/Conferences/EGU2024/Presentation/Images_JaouenTristan/CalibrationSafran/ChroniqueCalibration_HER",HER_h_,"_Safran_1_20240709.png"), width = 9*100)
+# png(paste0("/home/tjaouen/Documents/Administratif/Conferences/EGU2024/Presentation/Images_JaouenTristan/CalibrationSafran/ChroniqueCalibration_HER",HER_h_,"_Safran_1_20240709.png"), width = 9*100)
+png(paste0("/home/tjaouen/Documents/Administratif/Conferences/EGU2024/Presentation/Images_JaouenTristan/CalibrationSafran/ChroniqueCalibration_HER",HER_h_,"_Safran_1_20240823.png"), width = 9*100)
 plot(p_mean)
 dev.off()

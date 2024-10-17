@@ -59,8 +59,7 @@ seuilAssec_ = 20
 # nom_categorieSimu_ = "SMASH_20231128/ChroniquesCombinees_saf_hist_rcp45/"
 # nom_categorieSimu_ = "SMASH_20231128/ChroniquesCombinees_saf_hist_rcp85/"
 
-nom_categorieSimu_list_ = c(
-  # "CTRIP_20231128/ChroniquesCombinees_saf_hist_rcp26/",
+nom_categorieSimu_list_ = c("CTRIP_20231128/ChroniquesCombinees_saf_hist_rcp26/")#,
   #                           "CTRIP_20231128/ChroniquesCombinees_saf_hist_rcp45/",
   #                           "CTRIP_20231128/ChroniquesCombinees_saf_hist_rcp85/",
   #                           "GRSD_20231128/ChroniquesCombinees_saf_hist_rcp26/",
@@ -69,9 +68,9 @@ nom_categorieSimu_list_ = c(
   #                           "J2000_20231128/ChroniquesCombinees_saf_hist_rcp26/",
   #                           "J2000_20231128/ChroniquesCombinees_saf_hist_rcp45/",
   #                           "J2000_20231128/ChroniquesCombinees_saf_hist_rcp85/",
-                            "ORCHIDEE_20231128/ChroniquesCombinees_saf_hist_rcp26/",
-                            "ORCHIDEE_20231128/ChroniquesCombinees_saf_hist_rcp45/",
-                            "ORCHIDEE_20231128/ChroniquesCombinees_saf_hist_rcp85/")#,
+                            # "ORCHIDEE_20231128/ChroniquesCombinees_saf_hist_rcp26/",
+                            # "ORCHIDEE_20231128/ChroniquesCombinees_saf_hist_rcp45/",
+                            # "ORCHIDEE_20231128/ChroniquesCombinees_saf_hist_rcp85/")#,
                             # "SMASH_20231128/ChroniquesCombinees_saf_hist_rcp26/",
                             # "SMASH_20231128/ChroniquesCombinees_saf_hist_rcp45/",
                             # "SMASH_20231128/ChroniquesCombinees_saf_hist_rcp85/")

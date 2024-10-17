@@ -213,6 +213,7 @@ output_name_ <- paste0(folder_output_,
                        ifelse(nom_apprentissage_=="","",paste0("/",nom_apprentissage_)),
                        ifelse(nom_validation_=="","",paste0("/",nom_validation_)),
                        "/TableGlobale/Map_English/1_Map_Globale_Intercept_NonBoot/Intercept_NonBoot")
+breaks_Intercept <- breaks_Intercept_param
 # "/TableGlobale/Map_English/1_Map_Globale_Intercept_NonBoot/",str_before_first(basename(filename_),pattern = ".csv"),"")
 plot_map_variable_sansEtiquettes(tab_ = tab_results_,
                                  varname_ = "Intercept_general",
@@ -359,6 +360,7 @@ output_name_ <- paste0(folder_output_,
                        ifelse(nom_validation_=="","",paste0("/",nom_validation_)),
                        "/TableGlobale/Map_English/1_Map_Globale_ProbaAssecFDCnulle_NonBoot/ProbaAssecFDCnulle_NonBoot")
 # "/TableGlobale/Map_English/1_Map_Globale_ProbaAssecFDCnulle_NonBoot/",str_before_first(basename(filename_),pattern = ".csv"),"")
+breaks_ProbaAssecFDCnulle <- breaks_ProbaAssecFDCnulle_param
 plot_map_variable_sansEtiquettes(tab_ = tab_results_,
                                  varname_ = "ProbaAssecFDCnulle_general",
                                  # vartitle_ = "Probability of drying\nstate at a zero\nexceedance frequency (%)",
@@ -809,6 +811,7 @@ output_name_ <- paste0(folder_output_,
                        ifelse(nom_validation_=="","",paste0("/",nom_validation_)),
                        "/TableGlobale/Map_English/2_Map_Globale_Slope_NonBoot/Slope_NonBoot")
 # "/TableGlobale/Map_English/2_Map_Globale_Slope_NonBoot/",str_before_first(basename(filename_),pattern = ".csv"),"")
+breaks_Slope <- breaks_Slope_param
 plot_map_variable_sansEtiquettes(tab_ = tab_results_,
                                  varname_ = "Slope_general",
                                  vartitle_ = bquote("Slope (%"^{-1}~")"),  # Utilisation de expression pour mettre le -1 en exposant
@@ -953,6 +956,7 @@ output_name_ <- paste0(folder_output_,
                        ifelse(nom_validation_=="","",paste0("/",nom_validation_)),
                        "/TableGlobale/Map_English/3_Map_Globale_PropDev_NonBoot/PropDev_NonBoot")
 # "/TableGlobale/Map_English/3_Map_Globale_PropDev_NonBoot/",str_before_first(basename(filename_),pattern = ".csv"),"")
+breaks_propDev <- breaks_propDev_param
 plot_map_variable_sansEtiquettes(tab_ = tab_results_,
                                  varname_ = "PropParameterDeviance_logit_Learn_general",
                                  vartitle_ = "Proportion of\ndeviance (%)",
@@ -1108,6 +1112,7 @@ output_name_ <- paste0(folder_output_,
                        ifelse(nom_validation_=="","",paste0("/",nom_validation_)),
                        "/TableGlobale/Map_English/4_Map_Globale_KGE_NonBoot/KGE_NonBoot")
 # "/TableGlobale/Map_English/4_Map_Globale_KGE_NonBoot/",str_before_first(basename(filename_),pattern = ".csv"),"")
+breaks_KGE <- breaks_KGE_param
 plot_map_variable_sansEtiquettes(tab_ = tab_results_,
                                  varname_ = "KGE_HER_AnneeValid_logit_CValid_general",
                                  vartitle_ = "KGE (unitless)",
@@ -1268,6 +1273,7 @@ output_name_ <- paste0(folder_output_,
                        ifelse(nom_validation_=="","",paste0("/",nom_validation_)),
                        "/TableGlobale/Map_English/5_Map_Globale_Biais_General_NonBoot/Biais_General_NonBoot")
 # "/TableGlobale/Map_English/5_Map_Globale_Biais_General_NonBoot/",str_before_first(basename(filename_),pattern = ".csv"),"")
+breaks_Biais <- breaks_Biais_param
 plot_map_variable_sansEtiquettes(tab_ = tab_results_,
                                  varname_ = "Biais_general",
                                  vartitle_ = "Bias (unitless)",
@@ -1420,6 +1426,7 @@ output_name_ <- paste0(folder_output_,
                        ifelse(nom_validation_=="","",paste0("/",nom_validation_)),
                        "/TableGlobale/Map_English/6_Map_Globale_ErrMoyAbs_General_NonBoot/ErrMoyAbs_General_NonBoot")
 # "/TableGlobale/Map_English/6_Map_Globale_ErrMoyAbs_General_NonBoot/",str_before_first(basename(filename_),pattern = ".csv"),"")
+breaks_ErrMoyAbs <- breaks_ErrMoyAbs_param
 plot_map_variable_sansEtiquettes(tab_ = tab_results_,
                                  varname_ = "ErreurMoyenneAbsolue_general",
                                  # vartitle_ = "Mean Absolute Error\nbetween predictions\nand observations of\ndrying state at ONDE sites\n(unitless)",
@@ -1571,6 +1578,7 @@ output_name_ <- paste0(folder_output_,
                        ifelse(nom_validation_=="","",paste0("/",nom_validation_)),
                        "/TableGlobale/Map_English/7_Map_Globale_RMSE_General_NonBoot/RMSE_General_NonBoot")
 # "/TableGlobale/Map_English/7_Map_Globale_RMSE_General_NonBoot/",str_before_first(basename(filename_),pattern = ".csv"),"")
+breaks_RMSE <- breaks_RMSE_param
 plot_map_variable_sansEtiquettes(tab_ = tab_results_,
                                  varname_ = "RMSE_general",
                                  vartitle_ = "RMSE\n(unitless)",
@@ -2812,6 +2820,7 @@ output_name_ <- paste0(folder_output_,
                        ifelse(nom_validation_=="","",paste0("/",nom_validation_)),
                        "/TableGlobale/Map_English/8_Map_Globale_NSE_General_NonBoot/NSE_General_NonBoot")
 # "/TableGlobale/Map_English/6_Map_Globale_ErrMoyAbs_Mois09_NonBoot/",str_before_first(basename(filename_),pattern = ".csv"),"")
+breaks_NSE_ <- breaks_NSE_param
 plot_map_variable_sansEtiquettes(tab_ = tab_results_,
                                  varname_ = "NASH_HER_AnneeValid_logit_CValid_general",
                                  # vartitle_ = "Mean Absolute Error\nbetween predictions\nand observations of\ndrying state at ONDE sites\n(unitless)",

@@ -1,5 +1,6 @@
 source("/home/tjaouen/Documents/Src/PathsProgram/PathProgram_1_20230206.R")
-source("/home/tjaouen/Documents/Src/ChangementClimatique_Bottet2019/CodesTristan/8_RunsEtudeFrance_ApresCorrectionNcdfLH/1_Parameters/0_SimulationParameters_AvecCC_2_20230227.R")
+# source("/home/tjaouen/Documents/Src/ChangementClimatique_Bottet2019/CodesTristan/8_RunsEtudeFrance_ApresCorrectionNcdfLH/1_Parameters/0_SimulationParameters_AvecCC_2_20230227.R")
+source("/home/tjaouen/Documents/Src/ChangementClimatique_Bottet2019/CodesTristan/8_RunsEtudeFrance_ApresCorrectionNcdfLH/1_Parameters/0_SimulationParameters_AvecCC_2_20230227_Run2.R")
 
 ### Libraries ###
 library(grid)
@@ -70,12 +71,12 @@ nom_categorieSimu_list_ = c(
   #                           "GRSD_20231128/ChroniquesCombinees_saf_hist_rcp26/",
   #                           "GRSD_20231128/ChroniquesCombinees_saf_hist_rcp45/",
   #                           "GRSD_20231128/ChroniquesCombinees_saf_hist_rcp85/",
-  #                           "J2000_20231128/ChroniquesCombinees_saf_hist_rcp26/",
-  #                           "J2000_20231128/ChroniquesCombinees_saf_hist_rcp45/",
-  #                           "J2000_20231128/ChroniquesCombinees_saf_hist_rcp85/",
-                            "ORCHIDEE_20231128/ChroniquesCombinees_saf_hist_rcp26/",
-                            "ORCHIDEE_20231128/ChroniquesCombinees_saf_hist_rcp45/",
-                            "ORCHIDEE_20231128/ChroniquesCombinees_saf_hist_rcp85/")#,
+                            "J2000_20231128/ChroniquesCombinees_saf_hist_rcp26/",
+                            "J2000_20231128/ChroniquesCombinees_saf_hist_rcp45/",
+                            "J2000_20231128/ChroniquesCombinees_saf_hist_rcp85/")#,
+                            # "ORCHIDEE_20231128/ChroniquesCombinees_saf_hist_rcp26/",
+                            # "ORCHIDEE_20231128/ChroniquesCombinees_saf_hist_rcp45/",
+                            # "ORCHIDEE_20231128/ChroniquesCombinees_saf_hist_rcp85/")#,
                             # "SMASH_20231128/ChroniquesCombinees_saf_hist_rcp26/",
                             # "SMASH_20231128/ChroniquesCombinees_saf_hist_rcp45/",
                             # "SMASH_20231128/ChroniquesCombinees_saf_hist_rcp85/")
@@ -623,7 +624,8 @@ for (nom_categorieSimu_ in nom_categorieSimu_list_){
                   "/PanneauMap/Mean_English/ProbaBoard_",
                   ifelse(nom_categorieSimu_=="","",str_before_first(nom_categorieSimu_,"/")),"_",
                   nomCarte_,"_English_1_20240330.svg"),
-           plot = grid_1_) # width=15
+           plot = grid_1_,
+           width = 13, height = 7.5) # width=15
     
     ggsave(paste0(folder_output_DD_,
                   "22_GrapheChroniqueProbabilite_OneModelHorizon20702100_Projections/",
@@ -632,7 +634,8 @@ for (nom_categorieSimu_ in nom_categorieSimu_list_){
                   "/PanneauMap/Mean_English/ProbaBoard_",
                   ifelse(nom_categorieSimu_=="","",str_before_first(nom_categorieSimu_,"/")),"_",
                   nomCarte_,"_English_1_20240330.png"),
-           plot = grid_1_)
+           plot = grid_1_,
+           width = 13, height = 7.5)
     
     ggsave(paste0(folder_output_DD_,
                   "22_GrapheChroniqueProbabilite_OneModelHorizon20702100_Projections/",
@@ -641,7 +644,8 @@ for (nom_categorieSimu_ in nom_categorieSimu_list_){
                   "/PanneauMap/Mean_English/ProbaBoard_",
                   ifelse(nom_categorieSimu_=="","",str_before_first(nom_categorieSimu_,"/")),"_",
                   nomCarte_,"_English_1_20240330.pdf"),
-           plot = grid_1_) # width=15
+           plot = grid_1_,
+           width = 13, height = 7.5) # width=15
     
   }
 }

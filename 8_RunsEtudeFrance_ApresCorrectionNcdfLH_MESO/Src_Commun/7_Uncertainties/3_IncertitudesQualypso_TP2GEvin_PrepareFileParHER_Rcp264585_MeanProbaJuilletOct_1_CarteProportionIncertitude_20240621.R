@@ -497,7 +497,8 @@ df_incertitudes_ <- df_incertitudes_[,c("HER","GCM","RCM","HM","RCP","ResidualVa
 
 write.table(df_incertitudes_,
             # "/media/tjaouen/Ultra Touch/Backup/Main/Output/ChangementClimatique2019/EtudeFrance/22_GrapheChroniqueProbabilite_OneModelHorizon20702100_Projections/32_ObservesReanalyseSafran_ApprentissageTousScenariosProjections_20240208/StatistiquesPFI/Incertitudes/Version_1_20240619/TableProportionsIncertitudes_20702099_1_20240619.csv",
-            "/media/tjaouen/Ultra Touch/Backup/Main/Output/ChangementClimatique2019/EtudeFrance/22_GrapheChroniqueProbabilite_OneModelHorizon20702100_Projections/32_ObservesReanalyseSafran_ApprentissageTousScenariosProjections_20240208/StatistiquesPFI/Incertitudes/Version_1_20240619/TableProportionsIncertitudes_20702099_Rcp264585_1_20240621.csv",
+            # "/media/tjaouen/Ultra Touch/Backup/Main/Output/ChangementClimatique2019/EtudeFrance/22_GrapheChroniqueProbabilite_OneModelHorizon20702100_Projections/32_ObservesReanalyseSafran_ApprentissageTousScenariosProjections_20240208/StatistiquesPFI/Incertitudes/Version_1_20240619/TableProportionsIncertitudes_20702099_Rcp264585_1_20240621.csv",
+            "/media/tjaouen/Ultra Touch/Backup/Main/Output/ChangementClimatique2019/EtudeFrance/22_GrapheChroniqueProbabilite_OneModelHorizon20702100_Projections/33_Exclusion37054_20240822/StatistiquesPFI/Incertitudes/Version_1_20240703/TableProportionsIncertitudes_20702099_Rcp264585_1_20240621.csv",
             sep = ";", dec = ".", row.names = F)
 
   

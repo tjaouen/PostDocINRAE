@@ -789,6 +789,9 @@ for (nom_categorieSimu_ in nom_categorieSimu_list_){
                                      taillePalette = length(breaks_nbJoursDelai)+5,
                                      retenuPalette = length(breaks_nbJoursDelai))
     
+    write.table(merged_data, "/media/tjaouen/Ultra Touch1/Backup/Main/Output/ChangementClimatique2019/EtudeFrance/22_GrapheChroniqueProbabilite_OneModelHorizon20702100_Projections/32_ObservesReanalyseSafran_ApprentissageTousScenariosProjections_20240208/",nom_categorieSimu_,"/TablesStatsMap/merged_data_1_",nom_categorieSimu_,"_20240905.csv",
+                sep = ";", dec = ".", row.names = F)
+    
   }
 }
 

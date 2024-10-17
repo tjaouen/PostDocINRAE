@@ -1,0 +1,448 @@
+# Classification Random Forest
+# appliqu?e aux sites ONDE situ?s dans HER 97
+
+rm(list=ls())
+
+### Programmes ###
+source("/home/tjaouen/Documents/Src/PathsProgram/PathProgram_1_20230206.R")
+source("/home/tjaouen/Documents/Src/ChangementClimatique_Bottet2019/CodesTristan/8_RunsEtudeFrance_ApresCorrectionNcdfLH/1_Parameters/0_SimulationParameters_AvecCC_2_20230227_Run2.R")
+source("/home/tjaouen/Documents/Src/ChangementClimatique_Bottet2019/CodesTristan/9_PredictionParSiteONDE/Neural_Network/Prog_R/TristanSeul/4_Validation/1_ValidationPredictions_1_20240926.R")
+
+T1 <- Sys.time()
+
+library(plyr)
+library(MASS)
+library(randomForest)
+library(pROC)
+library(caret)
+library(strex)
+
+# list_year=c(2012, 2013, 2014, 2015, 2016)
+list_year=c(2012:2022)
+# list_param=c(27)
+# list_ntree=c(500)
+
+# list_ntree=c(10000)
+# list_ntry=c(5,10,15,20,25,30)
+
+# HER2 <- read.table("C:/Users/aurelien.beaufort/Documents/SIG/HER/Hydroecoregion2_group.csv",sep=";",header=T,quote="")
+
+HER_ <- HER_param_
+
+for (HERc in HER_[1]){
+  
+  print(paste0("HER: ",HERc))
+  
+  list_filesInput_ <- list.files(path = "/home/tjaouen/Documents/Output/ChangementClimatique2019/EtudeFrance/23_PredictionParSiteONDE_PremierTest/Input/Data/InputTestClassif/",
+                                 pattern = paste0("_30_jours_fin_caract_new_meteo_FINAL.csv"), full.names = T)
+  # list_filesInput_ <- list_filesInput_[grepl(paste0("HER_",HERc,"_"),list_filesInput_)]
+  # donnees <- NULL
+  # for (file_ in list_filesInput_){
+  #   tab_annee_ <- read.table(file_, sep = ";", dec = ".", header = T)
+  #   if (is.null(donnees)){
+  #     donnees <- tab_annee_
+  #   }else{
+  #     donnees <- rbind(donnees, tab_annee_)
+  #   }
+  # }
+  # donnees <- donnees[order(donnees$Code_Onde,donnees$Date),]
+  donnees <- read.table(list_filesInput_[1], sep = ";", dec = ".", header = T)
+  
+  # if (file.exists(paste("C:/Users/aurelien.beaufort/Documents/Neural_Network/Data/Input_Matrice/Input_test_classif_HER_",HERc,"_30_jours_fin_caract_new_meteo_FINAL.txt",sep=""))==T){
+  # if (file.exists(paste("/home/tjaouen/Documents/Output/ChangementClimatique2019/EtudeFrance/23_PredictionParSiteONDE_PremierTest/Input/Data/InputTestClassif/",sep=""))==T){
+  # donnees <- read.table(paste("C:/Users/aurelien.beaufort/Documents/Neural_Network/Data/Input_Matrice/Input_test_classif_HER_",HERc,"_30_jours_fin_caract_new_meteo_FINAL.txt",sep=""), sep=";", header = T, quote="", stringsAsFactors=F)
+  # donnees <- read.table(paste("/home/tjaouen/Documents/Output/ChangementClimatique2019/EtudeFrance/23_PredictionParSiteONDE_PremierTest/Input/Data/InputTestClassif/Input_test_classif_HER_",HERc,"_30_jours_fin_caract_new_meteo_FINAL.txt",sep=""), sep=";", header = T, quote="", stringsAsFactors=F)
+  print(paste0("NA: ",length(which(is.na(donnees$PourcentZeroCalage)))))
+  print(paste0("PourcentZeroCalage<0: ",length(which(!(donnees$PourcentZeroCalage>=0)))))
+  select=which(donnees$PourcentZeroCalage>=0) # [,126]
+  
+  j=30
+  param=27
+  compt2=0
+  critere_full=data.frame()
+  coefficient=data.frame()
+  
+  # 1. Preparing the dataset
+  # data_ini <- cbind(donnees[select,127],
+  #                   donnees[select,7:(7+j)],
+  #                   donnees[select,38:(38+j)],
+  #                   donnees[select,69:(69+j)],
+  #                   donnees[select,100:(100+10)],
+  #                   donnees[select,112:(112+10)],
+  #                   donnees[select,126],
+  #                   donnees[select,2],
+  #                   donnees[select,5:6],
+  #                   donnees[select,128],
+  #                   donnees[select,130])
+  data_ini <- cbind(donnees$Bin_Assec[select],
+                    donnees[select,7:(7+j)],
+                    donnees[select,38:(38+j)],
+                    donnees[select,69:(69+j)],
+                    donnees[select,100:(100+10)],
+                    donnees[select,112:(112+10)],
+                    donnees$PourcentZeroCalage[select],
+                    donnees$Altitude[select],
+                    donnees$AI_JanvJuil[select],
+                    donnees$REC_HIV[select],
+                    donnees$Aire_BV[select],
+                    donnees$Pente[select],
+                    donnees$Code_Onde[select],
+                    donnees$Date[select])
+  colnames(data_ini)[grepl("\\$",colnames(data_ini))] <- str_before_first(str_after_first(colnames(data_ini)[grepl("\\$",colnames(data_ini))],"\\$"),"\\[")
+  
+  date <- donnees$Date[select]
+  data=data.frame()
+  date_fin=data.frame()
+  
+  # On retire du jeu de donn?es les lignes o? un NA est pr?sent
+  compteur=0
+  # test_piezo=0
+  
+  if(length(which(is.na(data_ini$FreqGW_J.6)))==nrow(data_ini)){
+    data_ini=cbind(donnees$Bin_Assec[select],
+                   donnees[select,7:(7+j)],
+                   donnees[select,38:(38+j)],
+                   donnees[select,69:(69+j)],
+                   donnees[select,100:(100+10)],
+                   donnees$PourcentZeroCalage[select],
+                   donnees$Altitude[select],
+                   donnees$AI_JanvJuil[select],
+                   donnees$REC_HIV[select],
+                   donnees$Aire_BV[select],
+                   donnees$Pente[select],
+                   donnees$Code_Onde[select],
+                   donnees$Date[select])
+    colnames(data_ini)[grepl("\\$",colnames(data_ini))] <- str_before_first(str_after_first(colnames(data_ini)[grepl("\\$",colnames(data_ini))],"\\$"),"\\[")
+    test_piezo=FALSE
+  }else{
+    test_piezo = TRUE
+  }
+  
+  nbStations_Total_ <- length(unique(data_ini$Code_Onde[which(!is.na(data_ini$PRCP_J))]))
+  stationsManquantes_ <- unique(data_ini$Code_Onde[which(is.na(data_ini$PRCP_J))])
+  data_ini <- data_ini[which(!is.na(data_ini$PRCP_J)),]
+  
+  
+  # Si on garde les variables au jour
+  for (i in 1:nrow(data_ini)){
+    # if(!is.na(mean( as.numeric(data_ini[i,])))){
+    compteur = compteur+1
+    # data = rbind(data,data_ini[i,])
+    # data = rbind(data,data_ini[i,])
+    date_fin[compteur,1] = date[i]
+    
+    data[compteur,1:3] <- data_ini[i,1:3]
+    
+    # Moyenne par jour 
+    data[compteur,4] = sum(data_ini[i,(2:12)]) # PRCP cumul 10 jours
+    data[compteur,5] = sum(data_ini[i,(2:22)]) # PRCP cumul 20 jours
+    data[compteur,6] = sum(data_ini[i,(2:32)]) # PRCP cumul 30 jours
+    
+    # data[compteur,(7)] = data_ini[i,33] # ETP cumul jour j
+    # data[compteur,(8)] = data_ini[i,34] # ETP cumul jour j-1
+    data[compteur,7] = data_ini$ETP_J[i] # ETP cumul jour j
+    data[compteur,8] = data_ini$ETP_J.1[i] # ETP cumul jour j-1
+    data[compteur,9] = sum(data_ini[i,(33:43)]) # ETP cumul 10 jours
+    data[compteur,10] = sum(data_ini[i,(33:53)]) # ETP cumul 20 jours
+    data[compteur,11] = sum(data_ini[i,(33:63)]) # ETP cumul 30 jours
+    
+    # data[compteur,(12)] = data_ini[i,64] # TA cumul jour j
+    # data[compteur,(13)] = data_ini[i,65] # TA cumul jour j-1
+    data[compteur,12] = data_ini$TA_J[i] # TA cumul jour j
+    data[compteur,13] = data_ini$TA_J.1[i] # TA cumul jour j-1
+    data[compteur,14] = mean(as.numeric(data_ini[i,(64:74)])) # TA cumul 10 jours
+    data[compteur,15] = mean(as.numeric(data_ini[i,(64:84)])) # TA cumul 20 jours
+    data[compteur,16] = mean(as.numeric(data_ini[i,(64:94)])) # TA cumul 30 jours
+    
+    # data[compteur,(17)] = (as.numeric(data_ini[i,95])) # Freq au non depassement jour j
+    data[compteur,17] = (as.numeric(data_ini$FreqQ_J[i])) # Freq au non depassement jour j
+    data[compteur,18] = mean(as.numeric(data_ini[i,95:100])) # Freq au non depassement moy j5
+    data[compteur,19] = mean(as.numeric(data_ini[i,95:105])) # Freq au non depassement moy j10
+    
+    if(test_piezo==TRUE){
+      # data[compteur,20] = (as.numeric(data_ini$PourcentZeroCalage[i])) # Freq au non depassement jour j
+      data[compteur,20] = mean(as.numeric(data_ini[i,106:111])) # Freq au non depassement moy j5
+      data[compteur,21] = mean(as.numeric(data_ini[i,106:116])) # Freq au non depassement moy j10
+      data[compteur,22] = data_ini$PourcentZeroCalage[i]
+      data[compteur,23] = data_ini$Altitude[i]
+      data[compteur,24] = data_ini$AI_JanvJuil[i]
+      data[compteur,25] = data_ini$REC_HIV[i]
+      data[compteur,26] = data_ini$Aire_BV[i]
+      data[compteur,27] = data_ini$Pente[i]
+      data[compteur,28] = data_ini$Code_Onde[i]
+      data[compteur,29] = data_ini$Date[i]
+    }else{
+      data[compteur,20] = data_ini$PourcentZeroCalage[i]
+      data[compteur,21] = data_ini$Altitude[i]
+      data[compteur,22] = data_ini$AI_JanvJuil[i]
+      data[compteur,23] = data_ini$REC_HIV[i]
+      data[compteur,24] = data_ini$Aire_BV[i]
+      data[compteur,25] = data_ini$Pente[i]
+      data[compteur,26] = data_ini$Code_Onde[i]
+      data[compteur,27] = data_ini$Date[i]
+    }
+    # }
+  }
+  
+  if (ncol(data)>0){
+    if(test_piezo==TRUE){
+      # data=data[,-c(23:116)] # on supprime les variables non utilis?es
+      colnames(data)=c("Assec",
+                       "PRCP_J","PRCP_J1","PRCP_J10","PRCP_J20","PRCP_J30",
+                       "ETP_J","ETP_J1","ETP_J10","ETP_J20","ETP_J30",
+                       "TA_J","TA_J1","TA_J10","TA_J20","TA_J30",
+                       "FreqQ_j","FreqQ_j5","FreqQ_j10",
+                       "FreqGW_j","FreqGW_j5","FreqGW_j10", "P_DRYING_M",
+                       "Altitude","AI","REC_HIV","Aire","Pente","Code_Onde","Date")
+    } else if (test_piezo==FALSE){
+      # data=data[,-c(20:105)] # on supprime les variables non utilis?es
+      colnames(data)=c("Assec",
+                       "PRCP_J","PRCP_J1","PRCP_J10","PRCP_J20","PRCP_J30",
+                       "ETP_J","ETP_J1","ETP_J10","ETP_J20","ETP_J30",
+                       "TA_J","TA_J1","TA_J10","TA_J20","TA_J30",
+                       "FreqQ_j","FreqQ_j5","FreqQ_j10", "P_DRYING_M",
+                       "Altitude","AI","REC_HIV","Aire","Pente","Code_Onde","Date")
+    }
+    
+    # check that no datapoint is missing,
+    print("Number of NA for each variable:")
+    print(apply(data,2,function(x) sum(is.na(x))))
+    
+    # We therefore scale and split the data before moving on:
+    maxs <- apply(data[,!grepl("Code_Onde|Date",colnames(data))], 2, max)
+    mins <- apply(data[,!grepl("Code_Onde|Date",colnames(data))], 2, min)
+    scaled <- as.data.frame(scale(data[,!grepl("Code_Onde|Date",colnames(data))], center = mins, scale = maxs - mins))
+    # scaled$Date <- data$Date
+    scaled <- scaled[,which(apply(scaled,2,function(x) sum(is.na(x)))<nrow(scaled))]
+    scaled$Code_Onde <- data$Code_Onde
+    
+    # Si toutes les P_Drying sont ? 0
+    if(test_piezo==FALSE){
+      if (length(unique(data$Assec))==1){
+      # if (length(unique(data[,1]))==1 & data$P_DRYING_M[1]==0){
+        # scaled$P_DRYING_M[1:nrow(data)]=0
+        scaled$Assec=0
+      }
+    } else if (test_piezo==TRUE){
+      if (length(unique(data$Assec))==1){
+      # if (length(unique(data[,1]))==1 & data$P_DRYING_M[1]==0){
+        # scaled$P_DRYING_M[1:nrow(data)]=0
+        scaled$Assec=0
+      }
+    }
+    frame_test <- data.frame()
+    
+    for (year_test in 1:20){
+      # for (year_test in list_year){
+      
+      # check that no datapoint is missing,
+      # apply(data,2,function(x) sum(is.na(x)))
+      
+      set.seed(year_test)
+      selection_train = sample(1:nrow(scaled),round(0.8*nrow(scaled)))
+      # train <- as.matrix(scaled[selection_train,])
+      # test <- as.matrix(scaled[-selection_train,])
+      train <- as.data.frame(scaled[selection_train,])
+      test <- as.data.frame(scaled[-selection_train,])
+      nbStations_Train_ <- length(unique(train$Code_Onde[which(!is.na(train$PRCP_J))]))
+      nbStations_Test_ <- length(unique(test$Code_Onde[which(!is.na(test$PRCP_J))]))
+      train <- train[,!grepl("Code_Onde",colnames(train))]
+      test <- test[,!grepl("Code_Onde",colnames(test))]
+      
+      # selection_train = which(format(as.Date(date_fin[,1], "%d/%m/%Y"),"%Y")!=as.numeric(year_test))
+      # selection_test = which(format(as.Date(date_fin[,1], "%d/%m/%Y"),"%Y")==as.numeric(year_test))
+      # train <- as.matrix(scaled[selection_train,])
+      # test <- as.matrix(scaled[selection_test,])
+      
+      fit <- randomForest(Assec ~ ., data = train, ntree=500, na.action = na.omit) #
+      yhat <- data.frame(Prection = predict(fit, test[,2:ncol(test)], type="response"))
+      y_train <- predict(fit, train, type="response")
+      
+      # assec <- length(which(test[,1]==1))
+      # flow <- length(which(test[,1]==0))
+      assec <- length(which(test$Assec==1))
+      flow <- length(which(test$Assec==0))
+      
+      # bestmtry <- tuneRF(train[,2:25], train[,1], stepFactor=1.5, improve=1e-5, ntree=500)
+      # Pour visioner l'importance des variables dans la classif Mean Decrease Gini
+      # fit$importance[order(fit$importance[, 1], decreasing = TRUE),]
+      # mod <- train(Assec ~ ., data = train, method = "rf")
+      # varImpPlot(mod$finalModel)
+      
+      AUC<-NULL
+      
+      # if (length(unique(test$Assec)==1)){
+      #   my_roc <- NA
+      #   AUC <-NA
+      # } else {
+      #   my_roc <- roc(y.test, yhat10)
+      #   AUC=my_roc$auc
+      # }
+      
+      my_roc <- roc(train$Assec,y_train)
+      AUC <- my_roc$auc
+      
+      # Brier score
+      somme1 <- 0
+      brier1 <- NULL
+      
+      for (b in 1:length(yhat)){
+        somme1=somme1+(yhat[b]-test[b,1])^2
+      }
+      brier1=somme1/length(yhat)
+      
+      seuil = 0
+      compt=0
+      F1.score <- NULL
+      precision <- NULL
+      Recall <- NULL
+      ligne=0
+      frame_train<-data.frame()
+      
+      # test <- cbind(test,yhat)
+      # validationPredictions(test = test,
+      #                       seuil = seuil)
+      
+      # On recherche le seuil optimal cale sur le F.scrore dans le jeu d'entrainement
+      while (seuil <= 1){
+        ligne=ligne+1
+        compt=0
+
+        yhat_seuil = ifelse(y_train > seuil,1,ifelse(y_train<seuil,0,y_train))
+        TP_train = length(which(yhat_seuil==1 & train$Assec==1))
+        FP_train = length(which(yhat_seuil==1 & train$Assec==0))
+        FN_train = length(which(yhat_seuil==0 & train$Assec==1))
+        TN_train = length(which(yhat_seuil==0 & train$Assec==0))
+
+        if ((TP_train+FP_train) > 0 & (TP_train+FN_train) > 0 & (TN_train+FP_train) > 0){
+          frame_train[ligne,1]<-year_test
+          frame_train[ligne,2]<-seuil
+          Precision <- TP_train/(TP_train+FP_train)
+          Recall <- TP_train/(TP_train+FN_train)
+          frame_train[ligne,3]<-(2*Precision*Recall)/(Precision+Recall) # F1 score
+          frame_train[ligne,4]<-Precision # Precision
+          frame_train[ligne,5]<-Recall # Recall
+          frame_train[ligne,6]<-(TP_train+TN_train)/length(yhat) # Accuracy
+          frame_train[ligne,7]<-TP_train/(TP_train+FN_train) # Sensi
+          frame_train[ligne,8]<-TN_train/(TN_train+FP_train) # Speci
+          frame_train[ligne,9]<-FP_train/(FP_train+TP_train) # FAR
+          frame_train[ligne,10]<-nbStations_Total_
+          frame_train[ligne,11]<-nbStations_Train_
+          frame_train[ligne,12]<-nbStations_Test_
+          frame_train[ligne,13]<-paste(stationsManquantes_, collapse = ", ")
+        } else {
+          frame_train[ligne,1]<-year_test
+          frame_train[ligne,2]<-seuil
+          frame_train[ligne,3]<-NA # F1 score
+          frame_train[ligne,4]<-NA # Precision
+          frame_train[ligne,5]<-NA # Recall
+          frame_train[ligne,6]<-NA # Accuracy
+          frame_train[ligne,7]<-NA # Sensi
+          frame_train[ligne,8]<-NA # Speci
+          frame_train[ligne,9]<-NA # FAR
+          frame_train[ligne,8]<-NA # Speci
+          frame_train[ligne,9]<-NA # FAR
+          frame_train[ligne,10]<-NA
+          frame_train[ligne,11]<-NA
+          frame_train[ligne,12]<-NA
+          frame_train[ligne,13]<-NA
+        }
+        seuil=seuil+0.05
+      }
+      colnames(frame_train) <- c("YearTest","Seuil","F1.score","Precision","Recall","Accuracy","Sensitivity","Specificity","FalseAlarm")
+      
+
+      # On reprend le seuil optimal pour recalculer les scores dans le jeu test
+      seuil_opti=frame_train$Seuil[which(frame_train$F1.score==max(frame_train$F1.score, na.rm=T))]
+      
+      if(length(seuil_opti)==0){
+        seuil_opti=0.5
+      }
+      
+      # ifelse(length(seuil_opti)%%2==0,seuil_opti[round(length(seuil_opti)/2)])
+      # yhat$Prediction_bin <- as.numeric(yhat$Prection > seuil_opti[round(length(seuil_opti)/2)])
+      yhat$Prediction_bin <- as.numeric(yhat$Prection > median(seuil_opti))
+      # yhat$Prediction_bin <- as.numeric(yhat$Prection > seuil_opti[1])
+      TP_test = length(which(yhat$Prediction_bin==1 & test$Assec==1))
+      FP_test = length(which(yhat$Prediction_bin==1 & test$Assec==0))
+      FN_test = length(which(yhat$Prediction_bin==0 & test$Assec==1))
+      TN_test = length(which(yhat$Prediction_bin==0 & test$Assec==0))
+      
+      if ((TP_test+FP_test) > 0 & (TP_test+FN_test) > 0 & (TN_test+FP_test) > 0){
+        frame_test[year_test,1]<-year_test
+        frame_test[year_test,2]<-median(seuil_opti)
+        Precision <- round(TP_test/(TP_test+FP_test),4)
+        Recall <- round(TP_test/(TP_test+FN_test),4)
+        frame_test[year_test,3]<-round((2*Precision*Recall)/(Precision+Recall),4) # F1 score
+        frame_test[year_test,4]<-Precision # Precision
+        frame_test[year_test,5]<-Recall # Recall
+        frame_test[year_test,6]<-(TP_test+TN_test)/length(yhat$Prediction_bin) # Accuracy
+        frame_test[year_test,7]<-TP_test/(TP_test+FN_test) # Sensi
+        frame_test[year_test,8]<-TN_test/(TN_test+FP_test) # Speci
+        frame_test[year_test,9]<-FP_test/(FP_test+TP_test) # FAR
+        frame_test[year_test,10]<-nbStations_Total_
+        frame_test[year_test,11]<-nbStations_Train_
+        frame_test[year_test,12]<-nbStations_Test_
+        frame_test[year_test,13]<-paste(stationsManquantes_, collapse = ", ")
+      } else {
+        frame_test[year_test,1]<-year_test
+        frame_test[year_test,2]<-seuil
+        frame_test[year_test,3]<-NA # F1 score
+        frame_test[year_test,4]<-NA # Precision
+        frame_test[year_test,5]<-NA # Recall
+        frame_test[year_test,6]<-NA # Accuracy
+        frame_test[year_test,7]<-NA # Sensi
+        frame_test[year_test,8]<-NA # Speci
+        frame_test[year_test,9]<-NA # FAR
+        frame_test[year_test,10]<-NA # Nb stations
+        frame_test[year_test,11]<-NA # Stations manquantes
+        frame_test[year_test,12]<-NA # Stations manquantes
+        frame_test[year_test,13]<-NA # Stations manquantes
+      }
+      colnames(frame_test) <- c("YearTest","Seuil","F1.score","Precision","Recall","Accuracy","Sensitivity","Specificity","FalseAlarm",
+                                "nbStations_Total_","nbStations_Train_","nbStations_Test_","stationsManquantes_")
+      
+
+      # critere = data.frame(cbind(POD,FAR,AUC,precision,Recall,F1.score,brier1,seuil_opti[1],year_test,assec,flow)) #,mod$bestTune
+      # colnames(critere) <- c("POD", "FAR","Accuracy","Precision","Recall","F1_score")
+      # write.table(critere,paste("C:/Users/aurelien.beaufort/Documents/Neural_Network/OUTPUT/Graph_crit?res/Random_forest/R?sultats_locaux_HER_97/critere_",param,"var_test_",year_test,"_bis.csv", sep=""), sep=";", row.names = F, col.names = T)
+      # colnames(critere) <- c("POD", "FAR","Accuracy","Precision","Recall","F1_score","year_test","Nb_param")
+      
+      # if (length(critere_full)==0){
+      #   critere_full <- frame_test
+      # }else{
+      #   critere_full <- data.frame(rbind(critere_full,frame_test))
+      # }
+      
+      compt2=compt2+1
+      for (q in 1:length(fit$importance)){
+        coefficient[q,compt2] <- fit$importance[q]
+      }
+      
+      # png(file = paste("C:/Users/aurelien.beaufort/Documents/Neural_Network/OUTPUT/Graph_crit?res/Ridge_Lasso_Elastic_net/R?sultats_locaux_HER_97/Results_1_layer_3_nodes_27var_seuils_",sub("0.","0_",as.character(seuil_max)),"_",sub("0.","0_",as.character(seuil_min)),"_test_",year_test,".png", sep=""), width = 20, height = 10, units="cm", res=500)
+      # par(mfrow = c(2,2))
+      # # title(paste("Nombre de valeur pr?dites seuill?es = ", round(mean(valeur_seuillee),2)))
+      # boxplot(F1.score, xlab='F1 score', col='cyan', border='blue', ylim=c(0,1), names='F1 score', main='F1 score', horizontal=TRUE)
+      # boxplot(accuracy, xlab='Accuracy', col='cyan', border='blue', ylim=c(0,100), names='Accuracy (%)', main='Accuracy(%)', horizontal=TRUE)
+      # boxplot(POD, xlab='POD', col='cyan', border='blue', ylim=c(0,100), names='POD', main='POD', horizontal=TRUE)
+      # boxplot(FAR, xlab='FAR', col='cyan', border='blue', ylim=c(0,100), names='FAR', main='FAR', horizontal=TRUE)
+      
+      # title(main = paste("Nombre de valeur pr?dites seuill?es = ", round(mean(valeur_seuillee),2)), outer=TRUE, line=-1)
+      # dev.off()
+      
+    } # boucle random test
+    
+    # colnames(critere_full) <- c("POD", "FAR","AUC","Precision","Recall","F1_score","Brier","seuil_opti","year_test","Nb_Assec","Nb_Flow") #
+    write.table(frame_test,paste("/home/tjaouen/Documents/Output/ChangementClimatique2019/EtudeFrance/23_PredictionParSiteONDE_PremierTest/Random_Forest/ResultatsLocaux_France/CritereSeuilsOptiTest_2012_2016_FULL_moy_j",j,"_new_meteo_all_caract_HER_",HERc,"_RandomFinal.csv", sep=""), sep=";", row.names = F, col.names = T)
+    # colnames(coefficient) <- c("2012","2013","2014","2015","2016")
+    write.table(coefficient,paste("/home/tjaouen/Documents/Output/ChangementClimatique2019/EtudeFrance/23_PredictionParSiteONDE_PremierTest/Random_Forest/ResultatsLocaux_France/Coefficient_2012_2016_FULL_moy_j",j,"_new_meteo_all_caract_HER_",HERc,"_RandomFinal.csv", sep=""), sep=";", row.names = F, col.names = T)
+    
+    # T2 <- Sys.time()
+    # Tdiff <- difftime(T2, T1)
+    # print(Tdiff)
+  } # Test si donn?es existent
+  # } # Test matrice existe
+} # boucle HER
+
+
+

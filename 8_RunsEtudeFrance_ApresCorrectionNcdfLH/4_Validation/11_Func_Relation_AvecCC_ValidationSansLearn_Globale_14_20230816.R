@@ -215,6 +215,7 @@ FUNC_CAL_VAL_ValidationSansLearn_Globale <- function(annee,Matrice_comp,liste_He
       PropParameterDeviance_logit_Learn_tmp[i] <- mean(tab_test$PropParameterDeviance_logit_Learn)
       
       RMSE_tmp[i] <- sqrt(1/length(y) * sum((y-y_pred)^2))
+      # Biais_tmp[i] <- sum(y_pred-y)/length(y)
       Biais_tmp[i] <- sum(y_pred-y)/length(y)
       ErreurMoyenneAbsolue_tmp[i] <- sum(abs(y_pred-y))/length(y)
       
@@ -224,7 +225,8 @@ FUNC_CAL_VAL_ValidationSansLearn_Globale <- function(annee,Matrice_comp,liste_He
       y <- tab_test_3val$ProbaAssec_HERMoisAnnee_Apredire_CValid
       y_pred <- tab_test_3val$ProbaAssec_HERMoisAnnee_Predite_CValid
       RMSE_3maxApred_tmp[i] <- sqrt(1/length(y) * sum((y-y_pred)^2))
-      Biais_3maxApred_tmp[i] <- sum(y_pred-y)/length(y)
+      # Biais_3maxApred_tmp[i] <- sum(y_pred-y)/length(y)
+      Biais_3maxApred_tmp[i] <- sum(y_pred-y)
       ErreurMoyenneAbsolue_3maxApred_tmp[i] <- sum(abs(y_pred-y))/length(y)
       
       ### Sur le mois de mai ###
@@ -232,7 +234,8 @@ FUNC_CAL_VAL_ValidationSansLearn_Globale <- function(annee,Matrice_comp,liste_He
       y <- tab_test_mai$ProbaAssec_HERMoisAnnee_Apredire_CValid
       y_pred <- tab_test_mai$ProbaAssec_HERMoisAnnee_Predite_CValid
       RMSE_mai_tmp[i] <- sqrt(1/length(y) * sum((y-y_pred)^2))
-      Biais_mai_tmp[i] <- sum(y_pred-y)/length(y)
+      # Biais_mai_tmp[i] <- sum(y_pred-y)/length(y)
+      Biais_mai_tmp[i] <- sum(y_pred-y)
       ErreurMoyenneAbsolue_mai_tmp[i] <- sum(abs(y_pred-y))/length(y)
       
       ### Sur le mois de juin ###
@@ -240,7 +243,8 @@ FUNC_CAL_VAL_ValidationSansLearn_Globale <- function(annee,Matrice_comp,liste_He
       y <- tab_test_juin$ProbaAssec_HERMoisAnnee_Apredire_CValid
       y_pred <- tab_test_juin$ProbaAssec_HERMoisAnnee_Predite_CValid
       RMSE_juin_tmp[i] <- sqrt(1/length(y) * sum((y-y_pred)^2))
-      Biais_juin_tmp[i] <- sum(y_pred-y)/length(y)
+      # Biais_juin_tmp[i] <- sum(y_pred-y)/length(y)
+      Biais_juin_tmp[i] <- sum(y_pred-y)
       ErreurMoyenneAbsolue_juin_tmp[i] <- sum(abs(y_pred-y))/length(y)
       
       ### Sur le mois de juillet ###
@@ -248,7 +252,8 @@ FUNC_CAL_VAL_ValidationSansLearn_Globale <- function(annee,Matrice_comp,liste_He
       y <- tab_test_juillet$ProbaAssec_HERMoisAnnee_Apredire_CValid
       y_pred <- tab_test_juillet$ProbaAssec_HERMoisAnnee_Predite_CValid
       RMSE_juillet_tmp[i] <- sqrt(1/length(y) * sum((y-y_pred)^2))
-      Biais_juillet_tmp[i] <- sum(y_pred-y)/length(y)
+      # Biais_juillet_tmp[i] <- sum(y_pred-y)/length(y)
+      Biais_juillet_tmp[i] <- sum(y_pred-y)
       ErreurMoyenneAbsolue_juillet_tmp[i] <- sum(abs(y_pred-y))/length(y)
       
       ### Sur le mois de aout ###
@@ -256,7 +261,8 @@ FUNC_CAL_VAL_ValidationSansLearn_Globale <- function(annee,Matrice_comp,liste_He
       y <- tab_test_aout$ProbaAssec_HERMoisAnnee_Apredire_CValid
       y_pred <- tab_test_aout$ProbaAssec_HERMoisAnnee_Predite_CValid
       RMSE_aout_tmp[i] <- sqrt(1/length(y) * sum((y-y_pred)^2))
-      Biais_aout_tmp[i] <- sum(y_pred-y)/length(y)
+      # Biais_aout_tmp[i] <- sum(y_pred-y)/length(y)
+      Biais_aout_tmp[i] <- sum(y_pred-y)
       ErreurMoyenneAbsolue_aout_tmp[i] <- sum(abs(y_pred-y))/length(y)
       
       ### Sur le mois de septembre ###
@@ -264,7 +270,8 @@ FUNC_CAL_VAL_ValidationSansLearn_Globale <- function(annee,Matrice_comp,liste_He
       y <- tab_test_septembre$ProbaAssec_HERMoisAnnee_Apredire_CValid
       y_pred <- tab_test_septembre$ProbaAssec_HERMoisAnnee_Predite_CValid
       RMSE_septembre_tmp[i] <- sqrt(1/length(y) * sum((y-y_pred)^2))
-      Biais_septembre_tmp[i] <- sum(y_pred-y)/length(y)
+      # Biais_septembre_tmp[i] <- sum(y_pred-y)/length(y)
+      Biais_septembre_tmp[i] <- sum(y_pred-y)
       ErreurMoyenneAbsolue_septembre_tmp[i] <- sum(abs(y_pred-y))/length(y)
 
     }
@@ -413,7 +420,8 @@ FUNC_CAL_VAL_ValidationSansLearn_Globale <- function(annee,Matrice_comp,liste_He
     Intercept_general[id] <- round(mean(na.omit(tab_reduiteParApprentissage_$Inter_logit_Learn)),3)
     Slope_general[id] <- round(mean(na.omit(tab_reduiteParApprentissage_$Slope_logit_Learn)),3)
     RMSE_general[id] <- round(sqrt(1/length(y) * sum((y-y_pred)^2)),3)
-    Biais_general[id] <- round(sum(y_pred-y)/length(y),5) #,3)
+    # Biais_general[id] <- round(sum(y_pred-y)/length(y),5) #,3)
+    Biais_general[id] <- round(sum(y_pred-y),3)
     ErreurMoyenneAbsolue_general[id] <- round(sum(abs(y_pred-y))/length(y),3)
     
     ### Sur les 5 valeurs les plus hautes de la Proba d'assec a predire ###
@@ -421,7 +429,8 @@ FUNC_CAL_VAL_ValidationSansLearn_Globale <- function(annee,Matrice_comp,liste_He
     y <- tab_test_3val$ProbaAssec_HERMoisAnnee_Apredire_CValid
     y_pred <- tab_test_3val$ProbaAssec_HERMoisAnnee_Predite_CValid
     RMSE_3maxApred_general[id] <- round(sqrt(1/length(y) * sum((y-y_pred)^2)),3)
-    Biais_3maxApred_general[id] <- round(sum(y_pred-y)/length(y),5) #,3)
+    # Biais_3maxApred_general[id] <- round(sum(y_pred-y)/length(y),5) #,3)
+    Biais_3maxApred_general[id] <- round(sum(y_pred-y),3)
     ErreurMoyenneAbsolue_3maxApred_general[id] <- round(sum(abs(y_pred-y))/length(y),3)
     
     ### Sur les valeurs de mai ###
@@ -429,7 +438,8 @@ FUNC_CAL_VAL_ValidationSansLearn_Globale <- function(annee,Matrice_comp,liste_He
     y <- tab_test_mai$ProbaAssec_HERMoisAnnee_Apredire_CValid
     y_pred <- tab_test_mai$ProbaAssec_HERMoisAnnee_Predite_CValid
     RMSE_mai_general[id] <- round(sqrt(1/length(y) * sum((y-y_pred)^2)),3)
-    Biais_mai_general[id] <- round(sum(y_pred-y)/length(y),5) #,3)
+    # Biais_mai_general[id] <- round(sum(y_pred-y)/length(y),5) #,3)
+    Biais_mai_general[id] <- round(sum(y_pred-y),3)
     ErreurMoyenneAbsolue_mai_general[id] <- round(sum(abs(y_pred-y))/length(y),3)
     
     ### Sur les valeurs de juin ###
@@ -437,7 +447,8 @@ FUNC_CAL_VAL_ValidationSansLearn_Globale <- function(annee,Matrice_comp,liste_He
     y <- tab_test_juin$ProbaAssec_HERMoisAnnee_Apredire_CValid
     y_pred <- tab_test_juin$ProbaAssec_HERMoisAnnee_Predite_CValid
     RMSE_juin_general[id] <- round(sqrt(1/length(y) * sum((y-y_pred)^2)),3)
-    Biais_juin_general[id] <- round(sum(y_pred-y)/length(y),5) #,3)
+    # Biais_juin_general[id] <- round(sum(y_pred-y)/length(y),5) #,3)
+    Biais_juin_general[id] <- round(sum(y_pred-y),3)
     ErreurMoyenneAbsolue_juin_general[id] <- round(sum(abs(y_pred-y))/length(y),3)
     
     ### Sur les valeurs de juillet ###
@@ -445,7 +456,8 @@ FUNC_CAL_VAL_ValidationSansLearn_Globale <- function(annee,Matrice_comp,liste_He
     y <- tab_test_juillet$ProbaAssec_HERMoisAnnee_Apredire_CValid
     y_pred <- tab_test_juillet$ProbaAssec_HERMoisAnnee_Predite_CValid
     RMSE_juillet_general[id] <- round(sqrt(1/length(y) * sum((y-y_pred)^2)),3)
-    Biais_juillet_general[id] <- round(sum(y_pred-y)/length(y),5) #,3)
+    # Biais_juillet_general[id] <- round(sum(y_pred-y)/length(y),5) #,3)
+    Biais_juillet_general[id] <- round(sum(y_pred-y),3)
     ErreurMoyenneAbsolue_juillet_general[id] <- round(sum(abs(y_pred-y))/length(y),3)
     
     ### Sur les valeurs de aout ###
@@ -453,7 +465,8 @@ FUNC_CAL_VAL_ValidationSansLearn_Globale <- function(annee,Matrice_comp,liste_He
     y <- tab_test_aout$ProbaAssec_HERMoisAnnee_Apredire_CValid
     y_pred <- tab_test_aout$ProbaAssec_HERMoisAnnee_Predite_CValid
     RMSE_aout_general[id] <- round(sqrt(1/length(y) * sum((y-y_pred)^2)),3)
-    Biais_aout_general[id] <- round(sum(y_pred-y)/length(y),5) #,3)
+    # Biais_aout_general[id] <- round(sum(y_pred-y)/length(y),5) #,3)
+    Biais_aout_general[id] <- round(sum(y_pred-y),3)
     ErreurMoyenneAbsolue_aout_general[id] <- round(sum(abs(y_pred-y))/length(y),3)
     
     ### Sur les valeurs de septembre ###
@@ -461,7 +474,8 @@ FUNC_CAL_VAL_ValidationSansLearn_Globale <- function(annee,Matrice_comp,liste_He
     y <- tab_test_septembre$ProbaAssec_HERMoisAnnee_Apredire_CValid
     y_pred <- tab_test_septembre$ProbaAssec_HERMoisAnnee_Predite_CValid
     RMSE_septembre_general[id] <- round(sqrt(1/length(y) * sum((y-y_pred)^2)),3)
-    Biais_septembre_general[id] <- round(sum(y_pred-y)/length(y),5) #,3)
+    # Biais_septembre_general[id] <- round(sum(y_pred-y)/length(y),5) #,3)
+    Biais_septembre_general[id] <- round(sum(y_pred-y),3)
     ErreurMoyenneAbsolue_septembre_general[id] <- round(sum(abs(y_pred-y))/length(y),3)
     
     ### Sur les valeurs max de l'annee ###
@@ -472,7 +486,8 @@ FUNC_CAL_VAL_ValidationSansLearn_Globale <- function(annee,Matrice_comp,liste_He
     y <- tab_maxByYear$ProbaAssec_HERMoisAnnee_Apredire_CValid
     y_pred <- tab_maxByYear$ProbaAssec_HERMoisAnnee_Predite_CValid
     RMSE_maxAnnees_general[id] <- round(sqrt(1/length(y) * sum((y-y_pred)^2)),3)
-    Biais_maxAnnees_general[id] <- round(sum(y_pred-y)/length(y),5) #,3)
+    # Biais_maxAnnees_general[id] <- round(sum(y_pred-y)/length(y),5) #,3)
+    Biais_maxAnnees_general[id] <- round(sum(y_pred-y),3)
     ErreurMoyenneAbsolue_maxAnnees_general[id] <- round(sum(abs(y_pred-y))/length(y),3)
     
     

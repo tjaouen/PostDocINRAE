@@ -1,0 +1,10 @@
+all: pull
+.PHONY: pull
+
+pull:
+	git --git-dir=/home/herautl/library/ASHE/.git/ --work-tree=/home/herautl/library/ASHE/ pull
+	git --git-dir=/home/herautl/library/CARD/.git/ --work-tree=/home/herautl/library/CARD/ pull
+	# git --git-dir=/home/herautl/library/dataSHEEP/.git/ --work-tree=/home/herautl/library/dataSHEEP/ pull
+	git --git-dir=/home/herautl/library/Explore2_toolbox/.git/ --work-tree=/home/herautl/library/Explore2_toolbox/ pull
+	git --git-dir=/home/herautl/library/EXstat/.git/ --work-tree=/home/herautl/library/EXstat/ pull
+	# make -C ./CARD/
